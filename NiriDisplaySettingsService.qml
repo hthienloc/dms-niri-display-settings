@@ -50,9 +50,15 @@ Singleton {
                         name: name,
                         friendlyName: friendly,
                         disabled: !hasLogical,
-                        logical: hasLogical ? raw.logical : null
+                        logical: hasLogical ? raw.logical : null,
+                        isInternal: internal
                     });
                 }
+                arr.sort((a, b) => {
+                    if (a.isInternal !== b.isInternal) return a.isInternal ? -1 : 1;
+                    return a.name.localeCompare(b.name);
+                });
+                arr.forEach(d => delete d.isInternal);
                 root.displays = arr;
             } catch (e) {}
         });
