@@ -30,28 +30,31 @@ Singleton {
     }
 
     function setDisplays() {
+        console.warn("[NiriDS] setDisplays starting...");
         Proc.runCommand("niriDS:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
+            console.warn("[NiriDS] command finished, exitCode:", exitCode);
             if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
                 const arr = [];
                 for (const name in parsed) {
                     const raw = parsed[name];
-                    const internal = isInternal({ name: name });
-                    
+                    // Using a simpler internal check directly for now to be safe
+                    const internal = name.toLowerCase().startsWith("edp") || name.toLowerCase().startsWith("lvds");
                     let friendly = internal ? "Laptop Screen" : (raw.model || name);
 
                     arr.push({
                         name: name,
                         friendlyName: friendly,
-                        make: raw.make || "",
-                        model: raw.model || "",
                         disabled: !raw.logical,
                         logical: raw.logical || null
                     });
                 }
                 root.displays = arr;
-            } catch (e) {}
+                console.warn("[NiriDS] Updated displays, count:", arr.length);
+            } catch (e) {
+                console.error("[NiriDS] JSON Error:", e);
+            }
         });
     }
 
@@ -92,8 +95,11 @@ Singleton {
                 let internal = null;
                 for (const name in parsed) {
                     const raw = parsed[name];
-                    if (isInternal({ name: name })) internal = { name: name, active: !!raw.logical };
-                    else if (raw.logical) activeExt++;
+                    if (name.toLowerCase().startsWith("edp") || name.toLowerCase().startsWith("lvds")) {
+                        internal = { name: name, active: !!raw.logical };
+                    } else if (raw.logical) {
+                        activeExt++;
+                    }
                 }
                 if (activeExt === 0 && internal && !internal.active) {
                     Proc.runCommand("niriDS:recover", ["niri", "msg", "output", internal.name, "on"], () => setDisplays());

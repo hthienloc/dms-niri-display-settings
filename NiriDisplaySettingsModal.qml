@@ -19,7 +19,6 @@ DankModal {
         parentBounds = Qt.rect(0, 0, 0, 0);
         backgroundOpacity = 0.5;
         open();
-        // Force refresh data when opening
         NiriDS.setDisplays();
     }
 
@@ -84,7 +83,6 @@ DankModal {
                 Item {
                     width: parent.width
                     height: Math.max(headerText.implicitHeight, closeButton.implicitHeight)
-
                     StyledText {
                         id: headerText
                         text: I18n.tr("Display Settings")
@@ -94,7 +92,6 @@ DankModal {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                     }
-
                     DankActionButton {
                         id: closeButton
                         iconName: "close"
@@ -110,7 +107,6 @@ DankModal {
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
-
                     StyledText {
                         text: I18n.tr("Project")
                         font.pixelSize: Theme.fontSizeMedium
@@ -119,52 +115,24 @@ DankModal {
                         opacity: 0.6
                         bottomPadding: Theme.spacingS
                     }
-
                     component ProfileItem: Rectangle {
                         property string profileName
                         property string label
                         property string icon
-
-                        width: parent.width
-                        height: 60
-                        radius: Theme.cornerRadius
+                        width: parent.width; height: 60; radius: Theme.cornerRadius
                         color: hoverM.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08)
                         border.color: hoverM.containsMouse ? Theme.primary : "transparent"
                         border.width: 1
-
                         Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: Theme.spacingL
-                            spacing: Theme.spacingL
-
-                            DankIcon {
-                                name: icon
-                                size: Theme.iconSize
-                                color: Theme.surfaceText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            StyledText {
-                                text: label
-                                font.pixelSize: Theme.fontSizeMedium
-                                color: Theme.surfaceText
-                                font.weight: Font.Medium
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
+                            anchors.fill: parent; anchors.leftMargin: Theme.spacingL; spacing: Theme.spacingL
+                            DankIcon { name: icon; size: Theme.iconSize; color: Theme.surfaceText; anchors.verticalCenter: parent.verticalCenter }
+                            StyledText { text: label; font.pixelSize: Theme.fontSizeMedium; color: Theme.surfaceText; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
                         }
-
                         MouseArea {
-                            id: hoverM
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                NiriDS.apply(profileName);
-                                root.close();
-                            }
+                            id: hoverM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: { NiriDS.apply(profileName); root.close(); }
                         }
                     }
-
                     ProfileItem { profileName: "internal_only"; label: I18n.tr("PC screen only"); icon: "computer" }
                     ProfileItem { profileName: "extend"; label: I18n.tr("Extend"); icon: "grid_view" }
                     ProfileItem { profileName: "external_only"; label: I18n.tr("Second screen only"); icon: "tv" }
@@ -174,7 +142,6 @@ DankModal {
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
-                    // Keep visible while debugging, even if count is 0
                     visible: true 
 
                     StyledText {
@@ -185,16 +152,31 @@ DankModal {
                         opacity: 0.6
                         topPadding: Theme.spacingM
                         bottomPadding: Theme.spacingS
-                        visible: root.optionCount > 0
                     }
 
-                    Repeater {
-                        model: NiriDS.displays
+                    DankListView {
+                        width: parent.width
+                        spacing: Theme.spacingS
+                        height: (60 * root.optionCount) + Theme.spacingS
+                        
+                        // Using ScriptModel which worked before
+                        model: ScriptModel { 
+                            id: dispModel
+                            values: NiriDS.displays 
+                        }
+
+                        Connections {
+                            target: NiriDS
+                            function onDisplaysChanged() { 
+                                dispModel.values = [...NiriDS.displays]; 
+                                console.log("[NiriDS UI] List refreshed with count:", dispModel.values.length);
+                            }
+                        }
+
                         delegate: Rectangle {
                             width: parent.width
                             height: 60
                             radius: Theme.cornerRadius
-
                             color: selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (itemHover.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08))
                             border.color: selectedIndex === index ? Theme.primary : "transparent"
                             border.width: selectedIndex === index ? 1 : 0
@@ -240,8 +222,7 @@ DankModal {
                             }
                         }
                     }
-                    
-                    // Show a message if no displays found
+
                     StyledText {
                         text: I18n.tr("No displays detected...")
                         font.pixelSize: Theme.fontSizeSmall
