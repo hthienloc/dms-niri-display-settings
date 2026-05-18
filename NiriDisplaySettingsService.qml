@@ -87,7 +87,17 @@ Singleton {
                 action = "on";
             }
             
-            Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i + 1));
+            Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => {
+                if (profile === "extend" && !internal) {
+                    const extCount = toProcess.filter(d => !isInternal(d)).length;
+                    const x = (extCount - 1) * 1920;
+                    Proc.runCommand("niriDS:extendPos", ["niri", "msg", "output", d.name, "position", "set", x.toString(), "0"], () => next(i + 1));
+                } else if (profile === "extend" && internal) {
+                    Proc.runCommand("niriDS:extendPos", ["niri", "msg", "output", d.name, "position", "auto"], () => next(i + 1));
+                } else {
+                    next(i + 1);
+                }
+            });
         }
         
         next(0);

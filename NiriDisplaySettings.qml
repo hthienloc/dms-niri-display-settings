@@ -18,6 +18,19 @@ PluginSettings {
             defaultValue: false
         }
 
+        SelectionSetting {
+            settingKey: "profileOnConnect"
+            label: I18n.tr("Profile on connect")
+            description: I18n.tr("Automatically apply this profile when an external monitor is connected")
+            options: [
+                { label: I18n.tr("Show Menu"), value: "" },
+                { label: I18n.tr("External Only"), value: "external_only" },
+                { label: I18n.tr("Extended"), value: "extend" },
+                { label: I18n.tr("Internal Only"), value: "internal_only" }
+            ]
+            defaultValue: ""
+        }
+
         ToggleSetting {
             settingKey: "enableFallback"
             label: I18n.tr("Enable safety fallback")

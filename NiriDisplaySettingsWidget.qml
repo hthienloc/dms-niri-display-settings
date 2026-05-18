@@ -37,7 +37,9 @@ PluginComponent {
 
     // High-reliability Niri Polling
     property int lastOutputCount: -1
-    
+    property int triggerCount: 0
+    property bool initialized: false
+
     Timer {
         id: niriWatcher
         interval: 3000
@@ -45,19 +47,27 @@ PluginComponent {
         running: true
         onTriggered: {
             NiriDS.setDisplays();
-            
+
             const current = NiriDS.displays.length;
             const prev = lastOutputCount;
-            
+
             if (prev === -1) {
                 lastOutputCount = current;
+                triggerCount++;
+                if (triggerCount >= 3) initialized = true;
                 return;
             }
 
+            if (!initialized) return;
+
             if (current !== prev) {
                 if (current > prev) {
+                    const profileOnConnect = PluginService.loadPluginData("niriDS", "profileOnConnect", "");
                     const autoShow = PluginService.loadPluginData("niriDS", "autoShowOnConnect", false);
-                    if (autoShow) {
+                    
+                    if (profileOnConnect) {
+                        NiriDS.apply(profileOnConnect);
+                    } else if (autoShow) {
                         root.openMenu();
                     }
                 } else if (current < prev) {

@@ -63,9 +63,9 @@ DankModal {
                 if (optionCount > 0) NiriDS.toggleDisable(NiriDS.displays[selectedIndex]);
                 event.accepted = true;
                 break;
-            case Qt.Key_1: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
-            case Qt.Key_2: NiriDS.apply("external_only"); root.close(); event.accepted = true; break;
-            case Qt.Key_3: NiriDS.apply("extend"); root.close(); event.accepted = true; break;
+            case Qt.Key_1: NiriDS.apply("external_only"); root.close(); event.accepted = true; break;
+            case Qt.Key_2: NiriDS.apply("extend"); root.close(); event.accepted = true; break;
+            case Qt.Key_3: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
         }
     }
 
@@ -98,10 +98,10 @@ DankModal {
                         bottomPadding: Theme.spacingS
                     }
                     ShortcutCard {
-                        iconName: "computer"
-                        label: I18n.tr("Internal Only")
+                        iconName: "tv"
+                        label: I18n.tr("External Only")
                         shortcut: "1"
-                        onClicked: { NiriDS.apply("internal_only"); root.close(); }
+                        onClicked: { NiriDS.apply("external_only"); root.close(); }
                     }
                     ShortcutCard {
                         iconName: "grid_view"
@@ -110,10 +110,10 @@ DankModal {
                         onClicked: { NiriDS.apply("extend"); root.close(); }
                     }
                     ShortcutCard {
-                        iconName: "tv"
-                        label: I18n.tr("External Only")
+                        iconName: "computer"
+                        label: I18n.tr("Internal Only")
                         shortcut: "3"
-                        onClicked: { NiriDS.apply("external_only"); root.close(); }
+                        onClicked: { NiriDS.apply("internal_only"); root.close(); }
                     }
                 }
 
