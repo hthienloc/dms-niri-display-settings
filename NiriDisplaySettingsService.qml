@@ -13,34 +13,31 @@ Singleton {
 
     property var displays: []
 
-    function getPluginData() {
-        if (typeof PluginService !== 'undefined') {
-            return PluginService.getPluginData("niriDS") || {};
-        }
-        return {};
-    }
-
     function isInternal(display) {
         if (!display || !display.name) return false;
-        const data = getPluginData();
-        const preferred = data.fallbackDisplay || "";
+        
+        // Use correct DMS API for loading plugin settings
+        let preferred = "";
+        try {
+            preferred = PluginService.loadPluginData("niriDS", "fallbackDisplay", "");
+        } catch (e) {}
+
         if (preferred && display.name === preferred) return true;
+
         const name = display.name.toLowerCase();
         return name.startsWith("edp") || name.startsWith("lvds");
     }
 
     function setDisplays() {
-        console.warn("[NiriDS] setDisplays starting...");
         Proc.runCommand("niriDS:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
-            console.warn("[NiriDS] command finished, exitCode:", exitCode);
             if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
                 const arr = [];
                 for (const name in parsed) {
                     const raw = parsed[name];
-                    // Using a simpler internal check directly for now to be safe
-                    const internal = name.toLowerCase().startsWith("edp") || name.toLowerCase().startsWith("lvds");
+                    const internal = isInternal({ name: name });
+                    
                     let friendly = internal ? "Laptop Screen" : (raw.model || name);
 
                     arr.push({
@@ -51,9 +48,8 @@ Singleton {
                     });
                 }
                 root.displays = arr;
-                console.warn("[NiriDS] Updated displays, count:", arr.length);
             } catch (e) {
-                console.error("[NiriDS] JSON Error:", e);
+                console.error("[NiriDS] UI Processing Error:", e);
             }
         });
     }
@@ -75,14 +71,22 @@ Singleton {
                 setDisplays();
                 return;
             }
+            
             const d = toProcess[i];
             const internal = isInternal(d);
             let action = "on";
-            if (profile === "internal_only") action = internal ? "on" : "off";
-            else if (profile === "external_only") action = internal ? "off" : "on";
+
+            if (profile === "internal_only") {
+                action = internal ? "on" : "off";
+            } else if (profile === "external_only") {
+                action = internal ? "off" : "on";
+            } else if (profile === "extend") {
+                action = "on";
+            }
             
             Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i + 1));
         }
+        
         next(0);
     }
 
