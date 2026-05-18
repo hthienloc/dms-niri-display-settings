@@ -43,13 +43,14 @@ Singleton {
                 for (const name in parsed) {
                     const raw = parsed[name];
                     const internal = isInternal({ name: name });
-                    let friendly = internal ? "Laptop Screen" : (raw.model || name);
+                    const hasLogical = raw.logical && typeof raw.logical === 'object';
+                    let friendly = internal ? "Laptop Screen" : ((raw.make && raw.model) ? (raw.make + " " + raw.model) : name);
 
                     arr.push({
                         name: name,
                         friendlyName: friendly,
-                        disabled: !raw.logical,
-                        logical: raw.logical || null
+                        disabled: !hasLogical,
+                        logical: hasLogical ? raw.logical : null
                     });
                 }
                 root.displays = arr;
@@ -87,17 +88,8 @@ Singleton {
                 action = "on";
             }
             
-            Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => {
-                if (profile === "extend" && !internal) {
-                    const extCount = toProcess.filter(d => !isInternal(d)).length;
-                    const x = (extCount - 1) * 1920;
-                    Proc.runCommand("niriDS:extendPos", ["niri", "msg", "output", d.name, "position", "set", x.toString(), "0"], () => next(i + 1));
-                } else if (profile === "extend" && internal) {
-                    Proc.runCommand("niriDS:extendPos", ["niri", "msg", "output", d.name, "position", "auto"], () => next(i + 1));
-                } else {
-                    next(i + 1);
-                }
-            });
+            const i2 = i;
+            Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i2));
         }
         
         next(0);

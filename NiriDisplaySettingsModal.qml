@@ -177,8 +177,7 @@ DankModal {
                                 font.weight: Font.Medium
                                 anchors.left: iIcon.right
                                 anchors.leftMargin: Theme.spacingL
-                                anchors.right: iStatus.left
-                                anchors.rightMargin: Theme.spacingL
+                                anchors.rightMargin: Theme.spacingL * 2 + Theme.iconSize + 8
                                 anchors.verticalCenter: parent.verticalCenter
                                 elide: Text.ElideRight
                             }

@@ -37,31 +37,32 @@ PluginComponent {
 
     // High-reliability Niri Polling
     property int lastOutputCount: -1
-    property int triggerCount: 0
-    property bool initialized: false
 
     Timer {
         id: niriWatcher
         interval: 3000
         repeat: true
         running: true
+
+        property int initTicks: 0
+
         onTriggered: {
             NiriDS.setDisplays();
-
             const current = NiriDS.displays.length;
-            const prev = lastOutputCount;
 
-            if (prev === -1) {
-                lastOutputCount = current;
-                triggerCount++;
-                if (triggerCount >= 3) initialized = true;
+            if (initTicks < 3) {
+                initTicks++;
                 return;
             }
 
-            if (!initialized) return;
+            if (initTicks === 3) {
+                lastOutputCount = current;
+                initTicks++;
+                return;
+            }
 
-            if (current !== prev) {
-                if (current > prev) {
+            if (current !== lastOutputCount) {
+                if (current > lastOutputCount) {
                     const profileOnConnect = PluginService.loadPluginData("niriDS", "profileOnConnect", "");
                     const autoShow = PluginService.loadPluginData("niriDS", "autoShowOnConnect", false);
                     
@@ -70,7 +71,7 @@ PluginComponent {
                     } else if (autoShow) {
                         root.openMenu();
                     }
-                } else if (current < prev) {
+                } else if (current < lastOutputCount) {
                     const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
                     if (enableFallback) {
                         NiriDS.fallbackIfUnplugged();
@@ -85,12 +86,5 @@ PluginComponent {
         modal.shouldBeVisible = true;
         modal.openCentered();
         NiriDS.setDisplays();
-    }
-
-    Component.onCompleted: {
-        Qt.callLater(() => {
-            NiriDS.setDisplays();
-            lastOutputCount = NiriDS.displays.length;
-        });
     }
 }
