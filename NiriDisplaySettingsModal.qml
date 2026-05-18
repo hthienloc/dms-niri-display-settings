@@ -40,7 +40,18 @@ DankModal {
 
     onBackgroundClicked: () => close()
     onOpened: () => {
-        selectedIndex = 0;
+        const displays = NiriDS?.displays || [];
+        const enabledCount = displays.filter(d => !d.disabled).length;
+        
+        let firstSelectable = 0;
+        for (let i = 0; i < displays.length; i++) {
+            const isLast = enabledCount === 1 && !displays[i].disabled;
+            if (!isLast) {
+                firstSelectable = i;
+                break;
+            }
+        }
+        selectedIndex = firstSelectable;
         Qt.callLater(() => {
             if (modalFocusScope) modalFocusScope.forceActiveFocus();
         });
