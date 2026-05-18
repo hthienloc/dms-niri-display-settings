@@ -21,11 +21,11 @@ Or manually:
 git clone https://github.com/hthienloc/dms-niri-display-settings ~/.config/DankMaterialShell/plugins/niriDS
 ```
 
-## Problem Solved & Features
+## Features
 
-- **Prevent Black-Screen Lockouts (Unplug Fallback)**: If you are in *External Only* mode and physically unplug your external monitor, the plugin instantly and automatically re-enables your laptop screen so you are never left with a dead black display.
-- **Windows-Style Profiles**: Instantly switch between *Internal Only*, *External Only*, or *Extended (Dual Display)* modes via a clean selector.
-- **Manual Output Control**: Easily toggle specific displays on or off from a manual list.
+- **Prevent Black-Screen Lockouts** - Instantly re-enables laptop screen if the external monitor is unplugged in *External Only* mode
+- **Windows-Style Profiles** - Switch between *Internal Only*, *External Only*, or *Extended (Dual Display)* modes
+- **Manual Output Control** - Easily toggle specific displays on or off from a list
 
 ## IPC Commands
 
