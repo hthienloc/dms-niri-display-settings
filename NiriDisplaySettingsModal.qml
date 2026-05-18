@@ -179,7 +179,7 @@ DankModal {
                             }
 
                             StyledText {
-                                text: isOnlyEnabled ? I18n.tr("Cannot disable - last display") : (modelData ? (modelData.friendlyName || "Unknown") : "Unknown")
+                                text: modelData ? (modelData.friendlyName || "Unknown") : "Unknown"
                                 font.pixelSize: Theme.fontSizeMedium
                                 color: Theme.surfaceText
                                 font.weight: Font.Medium
