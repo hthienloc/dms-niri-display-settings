@@ -119,23 +119,39 @@ DankModal {
                         property string profileName
                         property string label
                         property string icon
-                        width: parent.width; height: 60; radius: Theme.cornerRadius
+                        property string shortcut
+                        width: parent.width; height: 52; radius: Theme.cornerRadius
                         color: hoverM.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08)
                         border.color: hoverM.containsMouse ? Theme.primary : "transparent"
                         border.width: 1
                         Row {
-                            anchors.fill: parent; anchors.leftMargin: Theme.spacingL; spacing: Theme.spacingL
+                            anchors.fill: parent; anchors.leftMargin: Theme.spacingL; anchors.rightMargin: Theme.spacingL; spacing: Theme.spacingL
                             DankIcon { name: icon; size: Theme.iconSize; color: Theme.surfaceText; anchors.verticalCenter: parent.verticalCenter }
                             StyledText { text: label; font.pixelSize: Theme.fontSizeMedium; color: Theme.surfaceText; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
+                            Item { Layout.fillWidth: true }
+                            Rectangle {
+                                width: shortcutLabel.implicitWidth + Theme.spacingM * 2; height: shortcutLabel.implicitHeight + Theme.spacingS
+                                radius: Theme.cornerRadius / 2
+                                color: Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.5)
+                                anchors.verticalCenter: parent.verticalCenter
+                                StyledText {
+                                    id: shortcutLabel
+                                    text: shortcut
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceText
+                                    opacity: 0.6
+                                    anchors.centerIn: parent
+                                }
+                            }
                         }
                         MouseArea {
                             id: hoverM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                             onClicked: { NiriDS.apply(profileName); root.close(); }
                         }
                     }
-                    ProfileItem { profileName: "internal_only"; label: I18n.tr("PC screen only"); icon: "computer" }
-                    ProfileItem { profileName: "extend"; label: I18n.tr("Extend"); icon: "grid_view" }
-                    ProfileItem { profileName: "external_only"; label: I18n.tr("Second screen only"); icon: "tv" }
+                    ProfileItem { profileName: "internal_only"; label: I18n.tr("Internal Only"); icon: "computer"; shortcut: "1" }
+                    ProfileItem { profileName: "extend"; label: I18n.tr("Extended"); icon: "grid_view"; shortcut: "2" }
+                    ProfileItem { profileName: "external_only"; label: I18n.tr("External Only"); icon: "tv"; shortcut: "3" }
                 }
 
                 // Section 2: Manual Output Toggles
