@@ -13,10 +13,16 @@ Singleton {
 
     property var displays: []
 
+    function getPluginData() {
+        if (typeof PluginService !== 'undefined') {
+            return PluginService.getPluginData("niriDS") || {};
+        }
+        return {};
+    }
+
     function isInternal(display) {
         if (!display || !display.name) return false;
         
-        // Use correct DMS API for loading plugin settings
         let preferred = "";
         try {
             preferred = PluginService.loadPluginData("niriDS", "fallbackDisplay", "");
@@ -37,7 +43,6 @@ Singleton {
                 for (const name in parsed) {
                     const raw = parsed[name];
                     const internal = isInternal({ name: name });
-                    
                     let friendly = internal ? "Laptop Screen" : (raw.model || name);
 
                     arr.push({
@@ -48,9 +53,7 @@ Singleton {
                     });
                 }
                 root.displays = arr;
-            } catch (e) {
-                console.error("[NiriDS] UI Processing Error:", e);
-            }
+            } catch (e) {}
         });
     }
 

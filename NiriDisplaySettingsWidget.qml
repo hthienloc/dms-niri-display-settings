@@ -15,9 +15,7 @@ PluginComponent {
         target: "niriDS"
 
         function open(): string {
-            modal.shouldBeVisible = true;
-            modal.openCentered();
-            NiriDS.setDisplays();
+            root.openMenu();
             return "SUCCESS";
         }
 
@@ -37,39 +35,52 @@ PluginComponent {
         }
     }
 
-    // Monitor Hotplug Detection
-    property int lastCount: -1
-
+    // High-reliability Niri Polling
+    property int lastOutputCount: -1
+    
     Timer {
-        id: hotplugTimer
-        interval: 2000
+        id: niriWatcher
+        interval: 3000
         repeat: true
         running: true
         onTriggered: {
-            if (!Quickshell.screens) return;
-            const current = Quickshell.screens.length;
-
-            if (lastCount === -1) {
-                lastCount = current;
+            NiriDS.setDisplays();
+            
+            const current = NiriDS.displays.length;
+            const prev = lastOutputCount;
+            
+            if (prev === -1) {
+                lastOutputCount = current;
                 return;
             }
 
-            if (current !== lastCount) {
-                const data = NiriDS.getPluginData();
-
-                if (current > lastCount && data.autoShowOnConnect) {
-                    modal.shouldBeVisible = true;
-                    modal.openCentered();
-                    NiriDS.setDisplays();
-                } else if (current < lastCount && data.enableFallback !== false) {
-                    NiriDS.fallbackIfUnplugged();
+            if (current !== prev) {
+                if (current > prev) {
+                    const autoShow = PluginService.loadPluginData("niriDS", "autoShowOnConnect", false);
+                    if (autoShow) {
+                        root.openMenu();
+                    }
+                } else if (current < prev) {
+                    const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
+                    if (enableFallback) {
+                        NiriDS.fallbackIfUnplugged();
+                    }
                 }
-                lastCount = current;
+                lastOutputCount = current;
             }
         }
     }
 
+    function openMenu() {
+        modal.shouldBeVisible = true;
+        modal.openCentered();
+        NiriDS.setDisplays();
+    }
+
     Component.onCompleted: {
-        lastCount = Quickshell.screens ? Quickshell.screens.length : 0;
+        Qt.callLater(() => {
+            NiriDS.setDisplays();
+            lastOutputCount = NiriDS.displays.length;
+        });
     }
 }
