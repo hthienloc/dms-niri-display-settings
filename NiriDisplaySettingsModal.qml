@@ -19,6 +19,8 @@ DankModal {
         parentBounds = Qt.rect(0, 0, 0, 0);
         backgroundOpacity = 0.5;
         open();
+        // Force refresh data when opening
+        NiriDS.setDisplays();
     }
 
     shouldBeVisible: false
@@ -39,7 +41,9 @@ DankModal {
     onBackgroundClicked: () => close()
     onOpened: () => {
         selectedIndex = 0;
-        Qt.callLater(() => modalFocusScope.forceActiveFocus());
+        Qt.callLater(() => {
+            if (modalFocusScope) modalFocusScope.forceActiveFocus();
+        });
     }
 
     modalFocusScope.Keys.onPressed: event => {
@@ -170,7 +174,8 @@ DankModal {
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
-                    visible: root.optionCount > 0
+                    // Keep visible while debugging, even if count is 0
+                    visible: true 
 
                     StyledText {
                         text: I18n.tr("Manual Control")
@@ -180,81 +185,70 @@ DankModal {
                         opacity: 0.6
                         topPadding: Theme.spacingM
                         bottomPadding: Theme.spacingS
+                        visible: root.optionCount > 0
                     }
 
-                    DankListView {
-                        width: parent.width
-                        spacing: Theme.spacingS
-                        height: (50 * root.optionCount) + Theme.spacingS
-                        model: ScriptModel {
-                            id: displayModel
-                            values: NiriDS.displays
-                        }
-
-                        Connections {
-                            target: NiriDS
-                            function onDisplaysChanged() { displayModel.values = NiriDS.displays; }
-                        }
-
+                    Repeater {
+                        model: NiriDS.displays
                         delegate: Rectangle {
-                            required property var modelData
-                            required property int index
-
                             width: parent.width
-                            height: 50
+                            height: 60
                             radius: Theme.cornerRadius
 
-                            color: selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (hoverArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08))
+                            color: selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (itemHover.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08))
                             border.color: selectedIndex === index ? Theme.primary : "transparent"
                             border.width: selectedIndex === index ? 1 : 0
 
                             DankIcon {
-                                id: dispIcon
-                                name: NiriDS.isInternal(modelData) ? "computer" : "tv"
+                                id: iIcon
+                                name: (modelData && modelData.name && (modelData.name.toLowerCase().startsWith("edp") || modelData.name.toLowerCase().startsWith("lvds"))) ? "computer" : "tv"
                                 size: Theme.iconSize
                                 color: Theme.surfaceText
                                 anchors.left: parent.left
-                                anchors.leftMargin: Theme.spacingM
+                                anchors.leftMargin: Theme.spacingL
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
                             StyledText {
-                                text: {
-                                    const name = modelData.name || "Unknown";
-                                    const model = modelData.model || "";
-                                    const isInternal = NiriDS.isInternal(modelData);
-                                    return (model ? model : name) + (isInternal ? " (" + I18n.tr("Laptop") + ")" : "");
-                                }
+                                text: modelData ? (modelData.friendlyName || "Unknown") : "Unknown"
                                 font.pixelSize: Theme.fontSizeMedium
                                 color: Theme.surfaceText
                                 font.weight: Font.Medium
-                                anchors.left: dispIcon.right
-                                anchors.leftMargin: Theme.spacingM
-                                anchors.right: statusDot.left
-                                anchors.rightMargin: Theme.spacingM
+                                anchors.left: iIcon.right
+                                anchors.leftMargin: Theme.spacingL
+                                anchors.right: iStatus.left
+                                anchors.rightMargin: Theme.spacingL
                                 anchors.verticalCenter: parent.verticalCenter
                                 elide: Text.ElideRight
                             }
 
                             Rectangle {
-                                id: statusDot
+                                id: iStatus
+                                width: 8; height: 8; radius: 4
+                                color: (modelData && !modelData.disabled) ? "#4CAF50" : Theme.surfaceVariant
                                 anchors.right: parent.right
-                                anchors.rightMargin: Theme.spacingM
+                                anchors.rightMargin: Theme.spacingL
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 8
-                                height: 8
-                                radius: 4
-                                color: modelData.disabled ? Theme.surfaceVariant : "#4CAF50"
                             }
 
                             MouseArea {
-                                id: hoverArea
+                                id: itemHover
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: NiriDS.toggleDisable(modelData)
                             }
                         }
+                    }
+                    
+                    // Show a message if no displays found
+                    StyledText {
+                        text: I18n.tr("No displays detected...")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        opacity: 0.4
+                        visible: root.optionCount === 0
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
             }

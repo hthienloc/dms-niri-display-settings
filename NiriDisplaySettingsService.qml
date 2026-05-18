@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import Quickshell
+import Quickshell.Io
 import QtQuick
 import qs.Common
 import qs.Services
@@ -36,8 +37,13 @@ Singleton {
                 const arr = [];
                 for (const name in parsed) {
                     const raw = parsed[name];
+                    const internal = isInternal({ name: name });
+                    
+                    let friendly = internal ? "Laptop Screen" : (raw.model || name);
+
                     arr.push({
                         name: name,
+                        friendlyName: friendly,
                         make: raw.make || "",
                         model: raw.model || "",
                         disabled: !raw.logical,
@@ -71,7 +77,7 @@ Singleton {
             let action = "on";
             if (profile === "internal_only") action = internal ? "on" : "off";
             else if (profile === "external_only") action = internal ? "off" : "on";
-
+            
             Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i + 1));
         }
         next(0);
