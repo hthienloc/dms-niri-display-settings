@@ -29,79 +29,72 @@ Singleton {
     }
 
     function setDisplays() {
-        Proc.runCommand("niriDS:setDisplays", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
-            if (exitCode != 0) return;
+        Proc.runCommand("niriDS:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
+            if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
                 const arr = [];
                 for (const name in parsed) {
-                    const rawDisp = parsed[name];
-                    // Create a clean new object to ensure QML properties work correctly
-                    const disp = {
+                    const raw = parsed[name];
+                    arr.push({
                         name: name,
-                        make: rawDisp.make || "",
-                        model: rawDisp.model || "",
-                        disabled: !rawDisp.logical,
-                        logical: rawDisp.logical || null
-                    };
-                    arr.push(disp);
+                        make: raw.make || "",
+                        model: raw.model || "",
+                        disabled: !raw.logical,
+                        logical: raw.logical || null
+                    });
                 }
                 root.displays = arr;
-                console.log("[NiriDS] Updated displays list, count:", arr.length);
-            } catch (e) {
-                console.error("[NiriDS] Failed to parse outputs:", e);
-            }
+            } catch (e) {}
         });
-    }
-
-    Component.onCompleted: {
-        setDisplays();
     }
 
     function toggleDisable(display: var): void {
         if (!display || !display.name) return;
         const action = display.disabled ? "on" : "off";
-        Proc.runCommand("niriDS:toggle", ["niri", "msg", "output", display.name, action], (output, exitCode) => {
-            if (exitCode == 0) setDisplays();
+        Proc.runCommand("niriDS:toggle", ["niri", "msg", "output", display.name, action], (out, code) => {
+            if (code === 0) setDisplays();
         });
     }
 
-    function apply(profileName: string): void {
-        const displaysToProcess = [...displays];
-        if (displaysToProcess.length === 0) return;
+    function apply(profile: string): void {
+        const toProcess = [...displays];
+        if (toProcess.length === 0) return;
 
-        function processNext(index) {
-            if (index >= displaysToProcess.length) {
+        function next(i) {
+            if (i >= toProcess.length) {
                 setDisplays();
                 return;
             }
-            const disp = displaysToProcess[index];
-            const internal = isInternal(disp);
+            const d = toProcess[i];
+            const internal = isInternal(d);
             let action = "on";
-            if (profileName === "internal_only") action = internal ? "on" : "off";
-            else if (profileName === "external_only") action = internal ? "off" : "on";
-            Proc.runCommand("niriDS:apply", ["niri", "msg", "output", disp.name, action], () => processNext(index + 1));
+            if (profile === "internal_only") action = internal ? "on" : "off";
+            else if (profile === "external_only") action = internal ? "off" : "on";
+            
+            Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i + 1));
         }
-        processNext(0);
+        next(0);
     }
 
     function fallbackIfUnplugged(): void {
-        Proc.runCommand("niriDS:fallback", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
-            if (exitCode != 0) return;
+        Proc.runCommand("niriDS:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
+            if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
-                let activeExternalCount = 0;
-                let internalDisplay = null;
+                let activeExt = 0;
+                let internal = null;
                 for (const name in parsed) {
-                    const rawDisp = parsed[name];
-                    const internal = name.toLowerCase().startsWith("edp") || name.toLowerCase().startsWith("lvds");
-                    if (internal) internalDisplay = { name: name, logical: rawDisp.logical };
-                    else if (rawDisp.logical) activeExternalCount++;
+                    const raw = parsed[name];
+                    if (isInternal({ name: name })) internal = { name: name, active: !!raw.logical };
+                    else if (raw.logical) activeExt++;
                 }
-                if (activeExternalCount === 0 && internalDisplay && !internalDisplay.logical) {
-                    Proc.runCommand("niriDS:fallbackAct", ["niri", "msg", "output", internalDisplay.name, "on"], () => setDisplays());
+                if (activeExt === 0 && internal && !internal.active) {
+                    Proc.runCommand("niriDS:recover", ["niri", "msg", "output", internal.name, "on"], () => setDisplays());
                 }
             } catch (e) {}
         });
     }
+
+    Component.onCompleted: Qt.callLater(() => setDisplays())
 }

@@ -14,6 +14,8 @@ PluginComponent {
     }
 
     IpcHandler {
+        target: "niriDS"
+
         function open(): string {
             modal.shouldBeVisible = true;
             modal.openCentered();
@@ -28,35 +30,39 @@ PluginComponent {
         }
 
         function toggle(): string {
-            if (modal.shouldBeVisible) return close();
-            return open();
+            return modal.shouldBeVisible ? close() : open();
         }
 
         function apply(profile: string): string {
             NiriDS.apply(profile);
             return "SUCCESS";
         }
-
-        target: "niriDS"
     }
 
-    // High-frequency polling
+    // Monitor Hotplug Detection
     property int lastCount: -1
     
     Timer {
-        id: pollTimer
+        id: hotplugTimer
         interval: 2000
         repeat: true
         running: true
         onTriggered: {
             if (!Quickshell.screens) return;
             const current = Quickshell.screens.length;
-            if (lastCount === -1) { lastCount = current; return; }
+            
+            if (lastCount === -1) { 
+                lastCount = current; 
+                return; 
+            }
+
             if (current !== lastCount) {
                 const data = NiriDS.getPluginData();
+                
                 if (current > lastCount && data.autoShowOnConnect) {
                     modal.shouldBeVisible = true;
                     modal.openCentered();
+                    NiriDS.setDisplays();
                 } else if (current < lastCount && data.enableFallback !== false) {
                     NiriDS.fallbackIfUnplugged();
                 }
