@@ -4,6 +4,7 @@ import qs.Common
 import qs.Modals.Common
 import qs.Services
 import qs.Widgets
+import "../dms-common"
 
 DankModal {
     id: root
@@ -79,28 +80,9 @@ DankModal {
                 anchors.margins: Theme.spacingL
                 spacing: Theme.spacingL
 
-                // Header
-                Item {
-                    width: parent.width
-                    height: Math.max(headerText.implicitHeight, closeButton.implicitHeight)
-                    StyledText {
-                        id: headerText
-                        text: I18n.tr("Display Settings")
-                        font.pixelSize: Theme.fontSizeLarge
-                        color: Theme.surfaceText
-                        font.weight: Font.Medium
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    DankActionButton {
-                        id: closeButton
-                        iconName: "close"
-                        iconSize: Theme.iconSize - 4
-                        iconColor: Theme.surfaceText
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        onClicked: () => close()
-                    }
+                HeaderRow {
+                    title: I18n.tr("Display Settings")
+                    onCloseClicked: () => close()
                 }
 
                 // Section 1: Display Profiles
@@ -115,43 +97,24 @@ DankModal {
                         opacity: 0.6
                         bottomPadding: Theme.spacingS
                     }
-                    component ProfileItem: Rectangle {
-                        property string profileName
-                        property string label
-                        property string icon
-                        property string shortcut
-                        width: parent.width; height: 52; radius: Theme.cornerRadius
-                        color: hoverM.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08)
-                        border.color: hoverM.containsMouse ? Theme.primary : "transparent"
-                        border.width: 1
-                        Row {
-                            anchors.fill: parent; anchors.leftMargin: Theme.spacingL; anchors.rightMargin: Theme.spacingL; spacing: Theme.spacingL
-                            DankIcon { name: icon; size: Theme.iconSize; color: Theme.surfaceText; anchors.verticalCenter: parent.verticalCenter }
-                            StyledText { text: label; font.pixelSize: Theme.fontSizeMedium; color: Theme.surfaceText; font.weight: Font.Medium; anchors.verticalCenter: parent.verticalCenter }
-                            Item { Layout.fillWidth: true }
-                            Rectangle {
-                                width: shortcutLabel.implicitWidth + Theme.spacingM * 2; height: shortcutLabel.implicitHeight + Theme.spacingS
-                                radius: Theme.cornerRadius / 2
-                                color: Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.5)
-                                anchors.verticalCenter: parent.verticalCenter
-                                StyledText {
-                                    id: shortcutLabel
-                                    text: shortcut
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceText
-                                    opacity: 0.6
-                                    anchors.centerIn: parent
-                                }
-                            }
-                        }
-                        MouseArea {
-                            id: hoverM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: { NiriDS.apply(profileName); root.close(); }
-                        }
+                    ShortcutCard {
+                        iconName: "computer"
+                        label: I18n.tr("Internal Only")
+                        shortcut: "1"
+                        onClicked: { NiriDS.apply("internal_only"); root.close(); }
                     }
-                    ProfileItem { profileName: "internal_only"; label: I18n.tr("Internal Only"); icon: "computer"; shortcut: "1" }
-                    ProfileItem { profileName: "extend"; label: I18n.tr("Extended"); icon: "grid_view"; shortcut: "2" }
-                    ProfileItem { profileName: "external_only"; label: I18n.tr("External Only"); icon: "tv"; shortcut: "3" }
+                    ShortcutCard {
+                        iconName: "grid_view"
+                        label: I18n.tr("Extended")
+                        shortcut: "2"
+                        onClicked: { NiriDS.apply("extend"); root.close(); }
+                    }
+                    ShortcutCard {
+                        iconName: "tv"
+                        label: I18n.tr("External Only")
+                        shortcut: "3"
+                        onClicked: { NiriDS.apply("external_only"); root.close(); }
+                    }
                 }
 
                 // Section 2: Manual Output Toggles
@@ -220,10 +183,8 @@ DankModal {
                                 elide: Text.ElideRight
                             }
 
-                            Rectangle {
-                                id: iStatus
-                                width: 8; height: 8; radius: 4
-                                color: (modelData && !modelData.disabled) ? "#4CAF50" : Theme.surfaceVariant
+                            StatusDot {
+                                active: !(modelData && modelData.disabled)
                                 anchors.right: parent.right
                                 anchors.rightMargin: Theme.spacingL
                                 anchors.verticalCenter: parent.verticalCenter
