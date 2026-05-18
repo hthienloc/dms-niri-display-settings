@@ -1,13 +1,10 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs.Services
 import qs.Modules.Plugins
 
 PluginComponent {
     id: root
-
-    property var popoutService: null
 
     NiriDisplaySettingsModal {
         id: modal
@@ -41,7 +38,7 @@ PluginComponent {
 
     // Monitor Hotplug Detection
     property int lastCount: -1
-    
+
     Timer {
         id: hotplugTimer
         interval: 2000
@@ -50,15 +47,15 @@ PluginComponent {
         onTriggered: {
             if (!Quickshell.screens) return;
             const current = Quickshell.screens.length;
-            
-            if (lastCount === -1) { 
-                lastCount = current; 
-                return; 
+
+            if (lastCount === -1) {
+                lastCount = current;
+                return;
             }
 
             if (current !== lastCount) {
                 const data = NiriDS.getPluginData();
-                
+
                 if (current > lastCount && data.autoShowOnConnect) {
                     modal.shouldBeVisible = true;
                     modal.openCentered();

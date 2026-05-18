@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import qs.Common
 import qs.Modals.Common
@@ -187,9 +186,9 @@ DankModal {
                         width: parent.width
                         spacing: Theme.spacingS
                         height: (50 * root.optionCount) + Theme.spacingS
-                        model: ScriptModel { 
+                        model: ScriptModel {
                             id: displayModel
-                            values: NiriDS.displays 
+                            values: NiriDS.displays
                         }
 
                         Connections {

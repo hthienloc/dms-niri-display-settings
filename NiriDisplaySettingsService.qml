@@ -71,7 +71,7 @@ Singleton {
             let action = "on";
             if (profile === "internal_only") action = internal ? "on" : "off";
             else if (profile === "external_only") action = internal ? "off" : "on";
-            
+
             Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i + 1));
         }
         next(0);
