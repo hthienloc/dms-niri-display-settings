@@ -47,20 +47,40 @@ DankModal {
     }
 
     modalFocusScope.Keys.onPressed: event => {
+        function getNextEnabledIndex(current, direction) {
+            const displays = NiriDS?.displays || [];
+            let count = 0;
+            let index = current;
+            
+            while (count < optionCount) {
+                index = (index + direction + optionCount) % optionCount;
+                const item = displays[index];
+                const isLast = displays.filter(d => !d.disabled).length === 1 && !item.disabled;
+                if (!isLast) return index;
+                count++;
+            }
+            return current;
+        }
+
         switch (event.key) {
             case Qt.Key_Up:
             case Qt.Key_Backtab:
-                selectedIndex = (selectedIndex - 1 + optionCount) % (optionCount || 1);
+                selectedIndex = getNextEnabledIndex(selectedIndex, -1);
                 event.accepted = true;
                 break;
             case Qt.Key_Down:
             case Qt.Key_Tab:
-                selectedIndex = (selectedIndex + 1) % (optionCount || 1);
+                selectedIndex = getNextEnabledIndex(selectedIndex, 1);
                 event.accepted = true;
                 break;
             case Qt.Key_Return:
             case Qt.Key_Enter:
-                if (optionCount > 0) NiriDS.toggleDisable(NiriDS.displays[selectedIndex]);
+                if (optionCount > 0) {
+                    const item = NiriDS?.displays?.[selectedIndex];
+                    const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
+                    const isLast = enabledCount === 1 && !item?.disabled;
+                    if (!isLast) NiriDS.toggleDisable(item);
+                }
                 event.accepted = true;
                 break;
             case Qt.Key_1: NiriDS.apply("external_only"); root.close(); event.accepted = true; break;
