@@ -21,13 +21,13 @@ Or manually:
 git clone https://github.com/hthienloc/dms-niri-display-settings ~/.config/DankMaterialShell/plugins/niriDS
 ```
 
-## Features
+## Problem Solved & Features
 
-- **Windows-Style Profiles** - Switch between Laptop Screen Only, External Screen Only, or Extend (Dual display) instantly
-- **Automatic Fallback** - Safely reactivates your laptop display if all external monitors are unplugged, preventing black screens
-- **Manual Control** - Sleek vertical listing with live green/grey status badges to toggle individual outputs
-- **Material Styling** - Adaptive color tokens that respect the active shell theme dynamically
-- **Keyboard Friendly** - Fully accessible using Arrow keys, Tab, Enter, and Escape
+- **Prevent Black-Screen Lockouts (Unplug Fallback)**: If you are in *External Only* mode and physically unplug your external monitor, the plugin instantly and automatically re-enables your laptop screen so you are never left with a dead black display.
+- **Windows-Style Profiles**: Instantly switch between *Internal Only*, *External Only*, or *Extended (Dual Display)* modes via a clean selector.
+- **Manual Output Control**: Easily toggle specific displays on or off from a manual list.
+
+## IPC Commands
 
 Use `dms ipc call niriDS <command>` to control the display selector.
 
@@ -37,12 +37,6 @@ Use `dms ipc call niriDS <command>` to control the display selector.
 | `close` | Close the display settings modal |
 | `toggle` | Toggle the display settings modal |
 | `apply <profile>` | Apply a profile: `internal_only`, `external_only`, `extend` |
-
-### Automatic Detection
-
-The plugin includes a robust polling-based detection system that:
-1. **Auto-shows** the menu when a new monitor is plugged in (if enabled in settings).
-2. **Auto-falls back** to the laptop screen when all external monitors are unplugged (if enabled).
 
 ### Keybinding example (Niri)
 
