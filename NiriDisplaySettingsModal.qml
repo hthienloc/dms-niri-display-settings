@@ -156,9 +156,17 @@ DankModal {
                             width: parent.width
                             height: 60
                             radius: Theme.cornerRadius
-                            color: selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (itemHover.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08))
+                            color: isOnlyEnabled && !modelData?.disabled ? 
+                                Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.04) : 
+                                (selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (itemHover.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08)))
+                            opacity: isOnlyEnabled && !modelData?.disabled ? 0.5 : 1.0
                             border.color: selectedIndex === index ? Theme.primary : "transparent"
                             border.width: selectedIndex === index ? 1 : 0
+
+                            property bool isOnlyEnabled: {
+                                const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
+                                return enabledCount === 1 && !(modelData?.disabled);
+                            }
 
                             DankIcon {
                                 id: iIcon
@@ -171,7 +179,7 @@ DankModal {
                             }
 
                             StyledText {
-                                text: modelData ? (modelData.friendlyName || "Unknown") : "Unknown"
+                                text: isOnlyEnabled ? I18n.tr("Cannot disable - last display") : (modelData ? (modelData.friendlyName || "Unknown") : "Unknown")
                                 font.pixelSize: Theme.fontSizeMedium
                                 color: Theme.surfaceText
                                 font.weight: Font.Medium
@@ -193,8 +201,10 @@ DankModal {
                                 id: itemHover
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: NiriDS.toggleDisable(modelData)
+                                cursorShape: isOnlyEnabled ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                onClicked: {
+                                    if (!isOnlyEnabled) NiriDS.toggleDisable(modelData)
+                                }
                             }
                         }
                     }

@@ -70,51 +70,94 @@ Singleton {
         const toProcess = [...displays];
         if (toProcess.length === 0) return;
 
-        function next(i) {
-            if (i >= toProcess.length) {
-                setDisplays();
+        const internal = toProcess.filter(d => isInternal(d));
+        const external = toProcess.filter(d => !isInternal(d));
+
+        function enableAll(callback) {
+            function enableNext(i) {
+                if (i >= toProcess.length) {
+                    callback();
+                    return;
+                }
+                Proc.runCommand("niriDS:enable", ["niri", "msg", "output", toProcess[i].name, "on"], () => enableNext(i + 1));
+            }
+            enableNext(0);
+        }
+
+        function disableExternal(callback) {
+            function disableNext(i) {
+                if (i >= external.length) {
+                    callback();
+                    return;
+                }
+                Proc.runCommand("niriDS:disable", ["niri", "msg", "output", external[i].name, "off"], () => disableNext(i + 1));
+            }
+            disableNext(0);
+        }
+
+        function disableInternal(callback) {
+            function disableNext(i) {
+                if (i >= internal.length) {
+                    callback();
+                    return;
+                }
+                Proc.runCommand("niriDS:disable", ["niri", "msg", "output", internal[i].name, "off"], () => disableNext(i + 1));
+            }
+            disableNext(0);
+        }
+
+        function finish() {
+            Qt.callLater(() => {
+                Qt.callLater(() => setDisplays());
+            });
+        }
+
+        if (profile === "internal_only") {
+            enableAll(() => {
+                disableExternal(() => finish());
+            });
+        } else if (profile === "external_only") {
+            enableAll(() => {
+                disableInternal(() => finish());
+            });
+        } else if (profile === "extend") {
+            enableAll(() => finish());
+        } else {
+            finish();
+        }
+    }
+
+    function enableInternalDisplay(): void {
+        Proc.runCommand("niriDS:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
+            const internalNames = ["edp", "lvds"];
+            
+            if (exitCode !== 0) {
+                const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
+                if (pref) {
+                    Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
+                }
                 return;
             }
             
-            const d = toProcess[i];
-            const internal = isInternal(d);
-            let action = "on";
-
-            if (profile === "internal_only") {
-                action = internal ? "on" : "off";
-            } else if (profile === "external_only") {
-                action = internal ? "off" : "on";
-            } else if (profile === "extend") {
-                action = "on";
-            }
-            
-            const i2 = i;
-            Proc.runCommand("niriDS:applyStep", ["niri", "msg", "output", d.name, action], () => next(i2));
-        }
-        
-        next(0);
-    }
-
-    function fallbackIfUnplugged(): void {
-        Proc.runCommand("niriDS:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
-            if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
-                let activeExt = 0;
-                let internal = null;
                 for (const name in parsed) {
-                    const raw = parsed[name];
-                    if (name.toLowerCase().startsWith("edp") || name.toLowerCase().startsWith("lvds")) {
-                        internal = { name: name, active: !!raw.logical };
-                    } else if (raw.logical) {
-                        activeExt++;
+                    const lower = name.toLowerCase();
+                    if (internalNames.some(prefix => lower.startsWith(prefix))) {
+                        Proc.runCommand("niriDS:recover", ["niri", "msg", "output", name, "on"], () => setDisplays());
+                        return;
                     }
                 }
-                if (activeExt === 0 && internal && !internal.active) {
-                    Proc.runCommand("niriDS:recover", ["niri", "msg", "output", internal.name, "on"], () => setDisplays());
+                const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
+                if (pref) {
+                    Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
                 }
             } catch (e) {}
         });
+    }
+
+    function fallbackIfUnplugged(): void {
+        enableInternalDisplay();
     }
 
     Component.onCompleted: Qt.callLater(() => setDisplays())

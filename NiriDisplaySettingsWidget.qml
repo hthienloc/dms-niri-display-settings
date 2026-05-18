@@ -33,9 +33,13 @@ PluginComponent {
             NiriDS.apply(profile);
             return "SUCCESS";
         }
+
+        function fallback(): string {
+            NiriDS.fallbackIfUnplugged();
+            return "SUCCESS";
+        }
     }
 
-    // High-reliability Niri Polling
     property int lastOutputCount: -1
 
     Timer {
@@ -74,10 +78,42 @@ PluginComponent {
                 } else if (current < lastOutputCount) {
                     const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
                     if (enableFallback) {
-                        NiriDS.fallbackIfUnplugged();
+                        NiriDS.enableInternalDisplay();
+                        Qt.callLater(() => NiriDS.enableInternalDisplay());
+                        Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
                     }
                 }
                 lastOutputCount = current;
+            }
+        }
+    }
+
+    Timer {
+        id: fallbackRetryTimer
+        interval: 2500
+        repeat: true
+        running: false
+
+        property int retryCount: 0
+
+        onTriggered: {
+            if (retryCount >= 3) {
+                running = false;
+                retryCount = 0;
+                return;
+            }
+            NiriDS.enableInternalDisplay();
+            retryCount++;
+        }
+    }
+
+    Connections {
+        target: NiriDS
+        function onDisplaysChanged() {
+            const curr = NiriDS.displays.length;
+            const prev = lastOutputCount;
+            if (prev > 1 && curr === 1) {
+                fallbackRetryTimer.running = true;
             }
         }
     }
