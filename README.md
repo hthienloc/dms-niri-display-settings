@@ -51,6 +51,14 @@ binds {
 - DankMaterialShell >= 0.6.2
 - Niri Wayland compositor
 
+## Roadmap / TODO
+
+- [ ] **Custom Profiles:** Create, name, and save custom multi-monitor arrangements beyond the standard presets.
+- [ ] **Advanced Controls:** Add UI selectors for resolution, refresh rate, orientation, and fractional scaling.
+- [ ] **EDID Auto-Load:** Detect specific monitor combinations (e.g., home vs. office) and automatically apply saved profiles.
+- [ ] **Visual Layout Sandbox:** A drag-and-drop workspace UI to position screens relative to each other.
+- [ ] **Notification Alerts:** Rich system notifications when displays are toggled or fallback triggers.
+
 ## License
 
 MIT
