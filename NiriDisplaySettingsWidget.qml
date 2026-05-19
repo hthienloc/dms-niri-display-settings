@@ -77,14 +77,12 @@ PluginComponent {
             root.initTicks++;
 
             Qt.callLater(() => {
-                const current = NiriDS.displays.length;
                 const enabledCount = (NiriDS.displays || []).filter(d => !d.disabled).length;
                 const totalOutputs = Object.keys(NiriDS.rawOutputs || {}).length;
                 cachedRawOutputs = NiriDS.rawOutputs;
 
                 if (initTicks < 3) {
                     if (initTicks === 2) {
-                        lastOutputCount = current;
                         lastEnabledCount = enabledCount;
                         lastTotalOutputs = totalOutputs;
                     }
