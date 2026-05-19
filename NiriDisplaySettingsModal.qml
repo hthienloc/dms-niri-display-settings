@@ -120,6 +120,8 @@ DankModal {
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
+                    property bool hasExternal: NiriDS.displays.filter(d => !d.disabled && !d.name.toLowerCase().startsWith("edp") && !d.name.toLowerCase().startsWith("lvds")).length > 0
+
                     StyledText {
                         text: I18n.tr("Project")
                         font.pixelSize: Theme.fontSizeMedium
@@ -132,12 +134,14 @@ DankModal {
                         iconName: "tv"
                         label: I18n.tr("External Only")
                         shortcut: "1"
+                        disabled: !parent.hasExternal
                         onClicked: { NiriDS.apply("external_only"); root.close(); }
                     }
                     ShortcutCard {
                         iconName: "grid_view"
                         label: I18n.tr("Extended")
                         shortcut: "2"
+                        disabled: !parent.hasExternal
                         onClicked: { NiriDS.apply("extend"); root.close(); }
                     }
                     ShortcutCard {
