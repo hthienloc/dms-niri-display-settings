@@ -15,6 +15,11 @@ DankModal {
     property int selectedIndex: 0
     property int optionCount: NiriDS.displays ? NiriDS.displays.length : 0
     property rect parentBounds: Qt.rect(0, 0, 0, 0)
+    property bool hasExternal: {
+        const raw = NiriDS.rawOutputs || {};
+        const names = Object.keys(raw);
+        return names.some(n => n && !NiriDS.isInternalName(n));
+    }
 
     function openCentered() {
         parentBounds = Qt.rect(0, 0, 0, 0);
@@ -94,8 +99,14 @@ DankModal {
                 }
                 event.accepted = true;
                 break;
-            case Qt.Key_1: NiriDS.apply("external_only"); root.close(); event.accepted = true; break;
-            case Qt.Key_2: NiriDS.apply("extend"); root.close(); event.accepted = true; break;
+            case Qt.Key_1: 
+                if (hasExternal) { NiriDS.apply("external_only"); root.close(); }
+                event.accepted = true; 
+                break;
+            case Qt.Key_2: 
+                if (hasExternal) { NiriDS.apply("extend"); root.close(); }
+                event.accepted = true; 
+                break;
             case Qt.Key_3: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
         }
     }
@@ -121,11 +132,6 @@ DankModal {
                     id: profileSection
                     width: parent.width
                     spacing: Theme.spacingS
-                    property bool hasExternal: {
-                        const raw = NiriDS.rawOutputs || {};
-                        const names = Object.keys(raw);
-                        return names.some(n => n && !NiriDS.isInternalName(n));
-                    }
 
                     StyledText {
                         text: I18n.tr("Project")
@@ -139,14 +145,14 @@ DankModal {
                         iconName: "tv"
                         label: I18n.tr("External Only")
                         shortcut: "1"
-                        disabled: !profileSection.hasExternal
+                        disabled: !root.hasExternal
                         onClicked: { NiriDS.apply("external_only"); root.close(); }
                     }
                     ShortcutCard {
                         iconName: "grid_view"
                         label: I18n.tr("Extended")
                         shortcut: "2"
-                        disabled: !profileSection.hasExternal
+                        disabled: !root.hasExternal
                         onClicked: { NiriDS.apply("extend"); root.close(); }
                     }
                     ShortcutCard {
