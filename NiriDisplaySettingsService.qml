@@ -14,16 +14,17 @@ Singleton {
     property var displays: []
     property var rawOutputs: ({} )
 
-    function getPluginData() {
-        if (typeof PluginService !== 'undefined') {
-            return PluginService.getPluginData("niriDS") || {};
-        }
-        return {};
+    readonly property var internalPrefixes: ["edp", "lvds"]
+
+    function isInternalName(name) {
+        if (!name) return false;
+        const lower = name.toLowerCase();
+        return internalPrefixes.some(prefix => lower.startsWith(prefix));
     }
 
     function isInternal(display) {
         if (!display || !display.name) return false;
-        
+
         let preferred = "";
         try {
             preferred = PluginService.loadPluginData("niriDS", "fallbackDisplay", "");
@@ -31,8 +32,7 @@ Singleton {
 
         if (preferred && display.name === preferred) return true;
 
-        const name = display.name.toLowerCase();
-        return name.startsWith("edp") || name.startsWith("lvds");
+        return isInternalName(display.name);
     }
 
     function setDisplays() {
@@ -62,7 +62,9 @@ Singleton {
                 });
                 arr.forEach(d => delete d.isInternal);
                 root.displays = arr;
-            } catch (e) {}
+            } catch (e) {
+                console.warn("niriDS: setDisplays failed:", e);
+            }
         });
     }
 
@@ -137,8 +139,6 @@ Singleton {
 
     function enableInternalDisplay(): void {
         Proc.runCommand("niriDS:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
-            const internalNames = ["edp", "lvds"];
-            
             if (exitCode !== 0) {
                 const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
                 if (pref) {
@@ -146,12 +146,11 @@ Singleton {
                 }
                 return;
             }
-            
+
             try {
                 const parsed = JSON.parse(output);
                 for (const name in parsed) {
-                    const lower = name.toLowerCase();
-                    if (internalNames.some(prefix => lower.startsWith(prefix))) {
+                    if (isInternalName(name)) {
                         Proc.runCommand("niriDS:recover", ["niri", "msg", "output", name, "on"], () => setDisplays());
                         return;
                     }
@@ -160,7 +159,9 @@ Singleton {
                 if (pref) {
                     Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("niriDS: enableInternalDisplay failed:", e);
+            }
         });
     }
 

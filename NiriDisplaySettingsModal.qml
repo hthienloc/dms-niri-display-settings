@@ -124,11 +124,7 @@ DankModal {
                     property bool hasExternal: {
                         const raw = NiriDS.rawOutputs || {};
                         const names = Object.keys(raw);
-                        return names.some(n =>
-                            n &&
-                            !n.toLowerCase().startsWith("edp") &&
-                            !n.toLowerCase().startsWith("lvds")
-                        );
+                        return names.some(n => n && !NiriDS.isInternalName(n));
                     }
 
                     StyledText {
@@ -213,7 +209,7 @@ DankModal {
 
                             DankIcon {
                                 id: iIcon
-                                name: (modelData && modelData.name && (modelData.name.toLowerCase().startsWith("edp") || modelData.name.toLowerCase().startsWith("lvds"))) ? "computer" : "tv"
+                                name: (modelData && modelData.name && NiriDS.isInternalName(modelData.name)) ? "computer" : "tv"
                                 size: Theme.iconSize
                                 color: Theme.surfaceText
                                 anchors.left: parent.left
