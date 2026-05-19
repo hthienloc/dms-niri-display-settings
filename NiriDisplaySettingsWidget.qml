@@ -40,8 +40,7 @@ PluginComponent {
         }
     }
 
-    property int lastOutputCount: -1
-    property int decreaseCount: 0
+    property int lastOutputCount: 0
     property int initTicks: 0
     property var cachedRawOutputs: ({} )
 
@@ -52,7 +51,6 @@ PluginComponent {
         NiriDS.enableInternalDisplay();
         Qt.callLater(() => NiriDS.enableInternalDisplay());
         Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
-        decreaseCount = 0;
     }
 
     Timer {
@@ -71,6 +69,7 @@ PluginComponent {
                 const totalOutputs = Object.keys(NiriDS.rawOutputs || {}).length;
                 cachedRawOutputs = NiriDS.rawOutputs;
 
+                // Skip first 2 ticks to allow Niri to stabilize outputs
                 if (initTicks < 3) {
                     if (initTicks === 2) {
                         lastOutputCount = current;
@@ -95,11 +94,9 @@ PluginComponent {
                     } else if (autoShow) {
                         Qt.callLater(() => root.openMenu());
                     }
-                } else if (current < lastOutputCount) {
-                    decreaseCount++;
-                    if (decreaseCount >= 1) {
-                        checkFallback();
-                    }
+                } else if (lastOutputCount > 0 && current < lastOutputCount) {
+                    // Display count decreased - external monitor unplugged
+                    checkFallback();
                 }
 
                 lastOutputCount = current;
