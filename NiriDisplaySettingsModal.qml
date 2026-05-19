@@ -193,10 +193,10 @@ DankModal {
 
                         delegate: Rectangle {
                             width: parent.width
-                            height: 60
+                            implicitHeight: 60
                             radius: Theme.cornerRadius
-                            color: isOnlyEnabled && !modelData?.disabled ? 
-                                Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.04) : 
+                            color: isOnlyEnabled && !modelData?.disabled ?
+                                Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.04) :
                                 (selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (itemHover.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08)))
                             opacity: isOnlyEnabled && !modelData?.disabled ? 0.5 : 1.0
                             border.color: selectedIndex === index ? Theme.primary : "transparent"

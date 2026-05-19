@@ -80,12 +80,8 @@ PluginComponent {
                 if (totalOutputs > prevTotalOutputs) {
                     const profileObj = pluginData?.profileOnConnect;
                     let profileOnConnect = "";
-                    if (profileObj && typeof profileObj === 'object') {
-                        const val = profileObj.value;
-                        const label = profileObj.label;
-                        if (val && val !== label) {
-                            profileOnConnect = val;
-                        }
+                    if (profileObj && typeof profileObj === 'object' && profileObj.value) {
+                        profileOnConnect = profileObj.value;
                     }
                     const autoShow = pluginData?.autoShowOnConnect === true;
 

@@ -117,9 +117,8 @@ Singleton {
         }
 
         function finish() {
-            Qt.callLater(() => {
-                Qt.callLater(() => setDisplays());
-            });
+            // Wait for Niri to apply changes before refreshing
+            Qt.callLater(() => setDisplays());
         }
 
         if (profile === "internal_only") {
