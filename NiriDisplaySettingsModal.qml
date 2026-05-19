@@ -216,12 +216,14 @@ DankModal {
                                 font.weight: Font.Medium
                                 anchors.left: iIcon.right
                                 anchors.leftMargin: Theme.spacingL
-                                anchors.rightMargin: Theme.spacingL * 2 + Theme.iconSize + 8
+                                anchors.right: statusDot.left
+                                anchors.rightMargin: Theme.spacingM
                                 anchors.verticalCenter: parent.verticalCenter
                                 elide: Text.ElideRight
                             }
 
                             StatusDot {
+                                id: statusDot
                                 active: !(modelData && modelData.disabled)
                                 anchors.right: parent.right
                                 anchors.rightMargin: Theme.spacingL

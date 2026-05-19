@@ -12,6 +12,7 @@ Singleton {
     id: root
 
     property var displays: []
+    property var rawOutputs: ({} )
 
     function getPluginData() {
         if (typeof PluginService !== 'undefined') {
@@ -39,6 +40,7 @@ Singleton {
             if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
+                root.rawOutputs = parsed;
                 const arr = [];
                 for (const name in parsed) {
                     const raw = parsed[name];

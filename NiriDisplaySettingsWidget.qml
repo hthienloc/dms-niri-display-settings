@@ -40,7 +40,30 @@ PluginComponent {
         }
     }
 
-    property int lastOutputCount: -1
+    property int lastEnabledCount: -1
+    property int lastTotalOutputs: -1
+    property int decreaseCount: 0
+    property int initTicks: 0
+    property var cachedRawOutputs: ({} )
+
+    function checkFallback() {
+        const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
+        if (!enableFallback) return;
+
+        const displays = NiriDS.displays || [];
+        const totalOutputs = Object.keys(NiriDS.rawOutputs || {}).length;
+        const enabledDisplays = displays.filter(d => !d.disabled).length;
+
+        if (totalOutputs > 0 && enabledDisplays === 0 && lastEnabledCount > 0) {
+            const allLostAtOnce = totalOutputs === lastEnabledCount;
+            if (!allLostAtOnce) {
+                NiriDS.enableInternalDisplay();
+                Qt.callLater(() => NiriDS.enableInternalDisplay());
+                Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
+            }
+        }
+        decreaseCount = 0;
+    }
 
     Timer {
         id: niriWatcher
@@ -48,73 +71,54 @@ PluginComponent {
         repeat: true
         running: true
 
-        property int initTicks: 0
-
         onTriggered: {
+            const prevTotalOutputs = Object.keys(cachedRawOutputs || {}).length;
             NiriDS.setDisplays();
-            const current = NiriDS.displays.length;
+            root.initTicks++;
 
-            if (initTicks < 3) {
-                initTicks++;
-                return;
-            }
+            Qt.callLater(() => {
+                const current = NiriDS.displays.length;
+                const enabledCount = (NiriDS.displays || []).filter(d => !d.disabled).length;
+                const totalOutputs = Object.keys(NiriDS.rawOutputs || {}).length;
+                cachedRawOutputs = NiriDS.rawOutputs;
 
-            if (initTicks === 3) {
-                lastOutputCount = current;
-                initTicks++;
-                return;
-            }
+                if (initTicks < 3) {
+                    if (initTicks === 2) {
+                        lastOutputCount = current;
+                        lastEnabledCount = enabledCount;
+                        lastTotalOutputs = totalOutputs;
+                    }
+                    return;
+                }
 
-            if (current !== lastOutputCount) {
-                if (current > lastOutputCount) {
-                    const profileOnConnect = PluginService.loadPluginData("niriDS", "profileOnConnect", "");
-                    const autoShow = PluginService.loadPluginData("niriDS", "autoShowOnConnect", false);
-                    
+                if (totalOutputs > prevTotalOutputs) {
+                    const profileObj = pluginData?.profileOnConnect;
+                    let profileOnConnect = "";
+                    if (profileObj && typeof profileObj === 'object') {
+                        const val = profileObj.value;
+                        const label = profileObj.label;
+                        if (val && val !== label) {
+                            profileOnConnect = val;
+                        }
+                    }
+                    const autoShow = pluginData?.autoShowOnConnect === true;
+
                     if (profileOnConnect) {
                         NiriDS.apply(profileOnConnect);
                     } else if (autoShow) {
-                        root.openMenu();
+                        Qt.callLater(() => root.openMenu());
                     }
-                } else if (current < lastOutputCount) {
-                    const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
-                    if (enableFallback) {
-                        NiriDS.enableInternalDisplay();
-                        Qt.callLater(() => NiriDS.enableInternalDisplay());
-                        Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
+                    return;
+                } else if (enabledCount < lastEnabledCount) {
+                    decreaseCount++;
+                    if (decreaseCount >= 2) {
+                        checkFallback();
                     }
                 }
-                lastOutputCount = current;
-            }
-        }
-    }
 
-    Timer {
-        id: fallbackRetryTimer
-        interval: 2500
-        repeat: true
-        running: false
-
-        property int retryCount: 0
-
-        onTriggered: {
-            if (retryCount >= 3) {
-                running = false;
-                retryCount = 0;
-                return;
-            }
-            NiriDS.enableInternalDisplay();
-            retryCount++;
-        }
-    }
-
-    Connections {
-        target: NiriDS
-        function onDisplaysChanged() {
-            const curr = NiriDS.displays.length;
-            const prev = lastOutputCount;
-            if (prev > 1 && curr === 1) {
-                fallbackRetryTimer.running = true;
-            }
+                lastEnabledCount = enabledCount;
+                lastTotalOutputs = totalOutputs;
+            });
         }
     }
 
