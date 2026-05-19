@@ -118,9 +118,18 @@ DankModal {
 
                 // Section 1: Display Profiles
                 Column {
+                    id: profileSection
                     width: parent.width
                     spacing: Theme.spacingS
-                    property bool hasExternal: NiriDS.displays.filter(d => !d.disabled && !d.name.toLowerCase().startsWith("edp") && !d.name.toLowerCase().startsWith("lvds")).length > 0
+                    property bool hasExternal: {
+                        const raw = NiriDS.rawOutputs || {};
+                        const names = Object.keys(raw);
+                        return names.some(n =>
+                            n &&
+                            !n.toLowerCase().startsWith("edp") &&
+                            !n.toLowerCase().startsWith("lvds")
+                        );
+                    }
 
                     StyledText {
                         text: I18n.tr("Project")
@@ -134,14 +143,14 @@ DankModal {
                         iconName: "tv"
                         label: I18n.tr("External Only")
                         shortcut: "1"
-                        disabled: !parent.hasExternal
+                        disabled: !profileSection.hasExternal
                         onClicked: { NiriDS.apply("external_only"); root.close(); }
                     }
                     ShortcutCard {
                         iconName: "grid_view"
                         label: I18n.tr("Extended")
                         shortcut: "2"
-                        disabled: !parent.hasExternal
+                        disabled: !profileSection.hasExternal
                         onClicked: { NiriDS.apply("extend"); root.close(); }
                     }
                     ShortcutCard {
@@ -181,9 +190,8 @@ DankModal {
 
                         Connections {
                             target: NiriDS
-                            function onDisplaysChanged() { 
-                                dispModel.values = [...NiriDS.displays]; 
-                                console.log("[NiriDS UI] List refreshed with count:", dispModel.values.length);
+                            function onDisplaysChanged() {
+                                dispModel.values = [...NiriDS.displays];
                             }
                         }
 

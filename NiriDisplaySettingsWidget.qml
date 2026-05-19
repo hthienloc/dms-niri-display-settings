@@ -40,8 +40,7 @@ PluginComponent {
         }
     }
 
-    property int lastEnabledCount: -1
-    property int lastTotalOutputs: -1
+    property int lastOutputCount: -1
     property int decreaseCount: 0
     property int initTicks: 0
     property var cachedRawOutputs: ({} )
@@ -50,18 +49,9 @@ PluginComponent {
         const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
         if (!enableFallback) return;
 
-        const displays = NiriDS.displays || [];
-        const totalOutputs = Object.keys(NiriDS.rawOutputs || {}).length;
-        const enabledDisplays = displays.filter(d => !d.disabled).length;
-
-        if (totalOutputs > 0 && enabledDisplays === 0 && lastEnabledCount > 0) {
-            const allLostAtOnce = totalOutputs === lastEnabledCount;
-            if (!allLostAtOnce) {
-                NiriDS.enableInternalDisplay();
-                Qt.callLater(() => NiriDS.enableInternalDisplay());
-                Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
-            }
-        }
+        NiriDS.enableInternalDisplay();
+        Qt.callLater(() => NiriDS.enableInternalDisplay());
+        Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
         decreaseCount = 0;
     }
 
@@ -77,14 +67,13 @@ PluginComponent {
             root.initTicks++;
 
             Qt.callLater(() => {
-                const enabledCount = (NiriDS.displays || []).filter(d => !d.disabled).length;
+                const current = NiriDS.displays.length;
                 const totalOutputs = Object.keys(NiriDS.rawOutputs || {}).length;
                 cachedRawOutputs = NiriDS.rawOutputs;
 
                 if (initTicks < 3) {
                     if (initTicks === 2) {
-                        lastEnabledCount = enabledCount;
-                        lastTotalOutputs = totalOutputs;
+                        lastOutputCount = current;
                     }
                     return;
                 }
@@ -106,16 +95,14 @@ PluginComponent {
                     } else if (autoShow) {
                         Qt.callLater(() => root.openMenu());
                     }
-                    return;
-                } else if (enabledCount < lastEnabledCount) {
+                } else if (current < lastOutputCount) {
                     decreaseCount++;
-                    if (decreaseCount >= 2) {
+                    if (decreaseCount >= 1) {
                         checkFallback();
                     }
                 }
 
-                lastEnabledCount = enabledCount;
-                lastTotalOutputs = totalOutputs;
+                lastOutputCount = current;
             });
         }
     }
