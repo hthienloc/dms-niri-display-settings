@@ -132,10 +132,29 @@ Singleton {
         } else if (profile === "extend") {
             enableAll(() => finish());
         } else if (profile === "mirror") {
-            enableAll(() => {
-                mirrorDisplay();
-                finish();
-            });
+            const hasActiveExternal = displays.some(d => !isInternal(d) && !d.disabled);
+            if (!hasActiveExternal) {
+                const external = displays.filter(d => !isInternal(d));
+                function enableExternalDisplay(next) {
+                    if (external.length === 0) {
+                        console.warn("niriDS: no external display to mirror");
+                        finish();
+                        return;
+                    }
+                    Proc.runCommand("niriDS:mirrorEn", ["niri", "msg", "output", external[0].name, "on"], () => {
+                        Qt.callLater(() => {
+                            mirrorDisplay();
+                            finish();
+                        });
+                    });
+                }
+                enableExternalDisplay();
+            } else {
+                enableAll(() => {
+                    mirrorDisplay();
+                    finish();
+                });
+            }
         } else {
             finish();
         }
