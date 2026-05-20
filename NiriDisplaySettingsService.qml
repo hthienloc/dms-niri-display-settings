@@ -144,11 +144,8 @@ Singleton {
             enableAll(() => finish());
         } else if (profile === "mirror") {
             enableAll(() => {
-                setDisplays();
-                Qt.callLater(() => {
-                    mirrorDisplay();
-                    finish();
-                });
+                mirrorDisplay();
+                finish();
             });
         } else {
             finish();
@@ -183,31 +180,15 @@ Singleton {
         });
     }
 
-    function fallbackIfUnplugged(): void {
-        enableInternalDisplay();
-    }
 
     function mirrorDisplay(): void {
-        // Mirror laptop (internal) content onto the external display.
-        // Enable all outputs first so the external monitor turns on even if
-        // it was previously disabled (e.g. "Internal Only" mode).
+        // Find internal + any external (regardless of disabled state).
+        // Callers (apply("mirror") and the button) must enable outputs first.
         const internal = displays.find(d => isInternal(d));
         const external = displays.find(d => !isInternal(d));
         if (!internal || !external) return;
-
-        const toEnable = displays.filter(d => d.disabled);
-        function enableNext(i) {
-            if (i >= toEnable.length) {
-                Qt.callLater(() => {
-                    wlMirrorProc.command = ["wl-mirror", "--fullscreen-output", external.name, internal.name];
-                    wlMirrorProc.running = true;
-                    Qt.callLater(() => setDisplays());
-                });
-                return;
-            }
-            Proc.runCommand("niriDS:enable", ["niri", "msg", "output", toEnable[i].name, "on"], () => enableNext(i + 1));
-        }
-        enableNext(0);
+        wlMirrorProc.command = ["wl-mirror", "--fullscreen-output", external.name, internal.name];
+        wlMirrorProc.running = true;
     }
 
     Component.onCompleted: Qt.callLater(() => setDisplays())

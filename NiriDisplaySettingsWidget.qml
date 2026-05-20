@@ -35,7 +35,7 @@ PluginComponent {
         }
 
         function mirror(): string {
-            NiriDS.mirrorDisplay();
+            NiriDS.apply("mirror");
             return "SUCCESS";
         }
 

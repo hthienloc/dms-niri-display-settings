@@ -108,7 +108,7 @@ DankModal {
                 event.accepted = true; 
                 break;
             case Qt.Key_3:
-                if (hasExternal) { NiriDS.mirrorDisplay(); root.close(); }
+                if (hasExternal) { NiriDS.apply("mirror"); root.close(); }
                 event.accepted = true; break;
             case Qt.Key_4: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
         }
@@ -163,7 +163,7 @@ DankModal {
                         label: I18n.tr("Mirror")
                         shortcut: "3"
                         disabled: !root.hasExternal
-                        onClicked: { NiriDS.mirrorDisplay(); root.close(); }
+                        onClicked: { NiriDS.apply("mirror"); root.close(); }
                     }
                     ShortcutCard {
                         iconName: "computer"
