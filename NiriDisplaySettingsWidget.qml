@@ -39,12 +39,6 @@ PluginComponent {
             return "SUCCESS";
         }
 
-        function mirror(): string {
-            if (!hasExternal) return "ERROR: no external display connected";
-            NiriDS.apply("mirror");
-            return "SUCCESS";
-        }
-
         function fallback(): string {
             NiriDS.enableInternalDisplay();
             return "SUCCESS";
