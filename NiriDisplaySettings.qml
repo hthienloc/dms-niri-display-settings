@@ -68,11 +68,6 @@ PluginSettings {
             text: "dms ipc call niriDS apply internal_only"
         }
 
-        CopyBox {
-            label: I18n.tr("Mirror Display Command")
-            text: "dms ipc call niriDS mirror"
-        }
-
         InfoText {
             text: I18n.tr("Valid profiles: internal_only, external_only, extend, mirror")
             font.pixelSize: Theme.fontSizeSmall
