@@ -116,23 +116,6 @@ Singleton {
             disableNext(0);
         }
 
-        function enableExternalIfNeeded(callback) {
-            const activeExternal = toProcess.find(d => !isInternal(d) && !d.disabled);
-            if (activeExternal) {
-                callback();
-                return;
-            }
-            const disabledExternal = toProcess.find(d => !isInternal(d) && d.disabled);
-            if (!disabledExternal) {
-                console.warn("niriDS: no external display available");
-                callback();
-                return;
-            }
-            Proc.runCommand("niriDS:enableExt", ["niri", "msg", "output", disabledExternal.name, "on"], () => {
-                Qt.callLater(callback);
-            });
-        }
-
         function finish() {
             Qt.callLater(() => setDisplays());
         }
@@ -148,11 +131,9 @@ Singleton {
         } else if (profile === "extend") {
             enableAll(() => finish());
         } else if (profile === "mirror") {
-            enableExternalIfNeeded(() => {
-                enableAll(() => {
-                    mirrorDisplay();
-                    finish();
-                });
+            enableAll(() => {
+                mirrorDisplay();
+                finish();
             });
         } else {
             finish();
