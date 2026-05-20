@@ -132,8 +132,11 @@ Singleton {
             enableAll(() => finish());
         } else if (profile === "mirror") {
             enableAll(() => {
-                mirrorDisplay();
-                finish();
+                setDisplays();
+                Qt.callLater(() => {
+                    mirrorDisplay();
+                    finish();
+                });
             });
         } else {
             finish();
