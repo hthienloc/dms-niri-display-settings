@@ -37,7 +37,7 @@ Use `dms ipc call niriDS <command>` to control the display selector.
 | `open` | Open the display settings modal |
 | `close` | Close the display settings modal |
 | `toggle` | Toggle the display settings modal |
-| `apply <profile>` | Apply a profile: `internal_only`, `external_only`, `extend` |
+| `apply <profile>` | Apply a profile: `internal_only`, `external_only`, `extend`, `mirror` |
 
 ### Keybinding example (Niri)
 

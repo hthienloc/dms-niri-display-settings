@@ -34,6 +34,11 @@ PluginComponent {
             return "SUCCESS";
         }
 
+        function mirror(): string {
+            NiriDS.mirrorDisplay();
+            return "SUCCESS";
+        }
+
         function fallback(): string {
             NiriDS.fallbackIfUnplugged();
             return "SUCCESS";

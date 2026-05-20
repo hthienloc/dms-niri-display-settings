@@ -131,6 +131,11 @@ Singleton {
             });
         } else if (profile === "extend") {
             enableAll(() => finish());
+        } else if (profile === "mirror") {
+            enableAll(() => {
+                mirrorDisplay();
+                finish();
+            });
         } else {
             finish();
         }

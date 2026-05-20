@@ -26,7 +26,8 @@ PluginSettings {
                 { label: I18n.tr("Show Menu"), value: "" },
                 { label: I18n.tr("External Only"), value: "external_only" },
                 { label: I18n.tr("Extended"), value: "extend" },
-                { label: I18n.tr("Internal Only"), value: "internal_only" }
+                { label: I18n.tr("Internal Only"), value: "internal_only" },
+                { label: I18n.tr("Mirror"), value: "mirror" }
             ]
             defaultValue: ""
         }
@@ -73,8 +74,13 @@ PluginSettings {
             text: "dms ipc call niriDS apply internal_only"
         }
 
+        CopyBox {
+            label: I18n.tr("Mirror Display Command")
+            text: "dms ipc call niriDS mirror"
+        }
+
         InfoText {
-            text: I18n.tr("Valid profiles: internal_only, external_only, extend")
+            text: I18n.tr("Valid profiles: internal_only, external_only, extend, mirror")
             font.pixelSize: Theme.fontSizeSmall
             opacity: 0.7
         }
