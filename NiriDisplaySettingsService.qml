@@ -116,8 +116,24 @@ Singleton {
             disableNext(0);
         }
 
+        function enableExternalIfNeeded(callback) {
+            const activeExternal = toProcess.find(d => !isInternal(d) && !d.disabled);
+            if (activeExternal) {
+                callback();
+                return;
+            }
+            const disabledExternal = toProcess.find(d => !isInternal(d) && d.disabled);
+            if (!disabledExternal) {
+                console.warn("niriDS: no external display available");
+                callback();
+                return;
+            }
+            Proc.runCommand("niriDS:enableExt", ["niri", "msg", "output", disabledExternal.name, "on"], () => {
+                Qt.callLater(callback);
+            });
+        }
+
         function finish() {
-            // Wait for Niri to apply changes before refreshing
             Qt.callLater(() => setDisplays());
         }
 
@@ -132,29 +148,12 @@ Singleton {
         } else if (profile === "extend") {
             enableAll(() => finish());
         } else if (profile === "mirror") {
-            const hasActiveExternal = displays.some(d => !isInternal(d) && !d.disabled);
-            if (!hasActiveExternal) {
-                const external = displays.filter(d => !isInternal(d));
-                function enableExternalDisplay(next) {
-                    if (external.length === 0) {
-                        console.warn("niriDS: no external display to mirror");
-                        finish();
-                        return;
-                    }
-                    Proc.runCommand("niriDS:mirrorEn", ["niri", "msg", "output", external[0].name, "on"], () => {
-                        Qt.callLater(() => {
-                            mirrorDisplay();
-                            finish();
-                        });
-                    });
-                }
-                enableExternalDisplay();
-            } else {
+            enableExternalIfNeeded(() => {
                 enableAll(() => {
                     mirrorDisplay();
                     finish();
                 });
-            }
+            });
         } else {
             finish();
         }
