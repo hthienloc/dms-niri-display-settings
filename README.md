@@ -23,7 +23,7 @@ git clone https://github.com/hthienloc/dms-niri-display-settings ~/.config/DankM
 
 ## Features
 
-- Display profiles: Internal Only, External Only, Extend
+- Display profiles: Internal Only, External Only, Extend, Mirror
 - Manual toggle for each display
 - Auto-show or auto-apply profile when monitor plugged in
 - Auto-enable laptop screen when external monitors disconnected
@@ -49,8 +49,9 @@ binds {
 
 ## Requirements
 
-- DankMaterialShell >= 0.6.2
+- DankMaterialShell >= 1.5
 - Niri Wayland compositor
+- `wl-mirror`
 
 ## License
 

@@ -168,5 +168,15 @@ Singleton {
         enableInternalDisplay();
     }
 
+    function mirrorDisplay(): void {
+        // Mirror laptop (internal) content onto the external display
+        const internal = displays.find(d => isInternal(d));
+        const external = displays.find(d => !isInternal(d) && !d.disabled);
+        if (!internal || !external) return;
+        // execDetached launches wl-mirror as a fully independent process
+        // so it keeps running after this function returns
+        Quickshell.execDetached(["wl-mirror", "--fullscreen-output", external.name, internal.name]);
+    }
+
     Component.onCompleted: Qt.callLater(() => setDisplays())
 }

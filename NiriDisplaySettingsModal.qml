@@ -107,7 +107,10 @@ DankModal {
                 if (hasExternal) { NiriDS.apply("extend"); root.close(); }
                 event.accepted = true; 
                 break;
-            case Qt.Key_3: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
+            case Qt.Key_3:
+                if (hasExternal) { NiriDS.mirrorDisplay(); root.close(); }
+                event.accepted = true; break;
+            case Qt.Key_4: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
         }
     }
 
@@ -156,9 +159,16 @@ DankModal {
                         onClicked: { NiriDS.apply("extend"); root.close(); }
                     }
                     ShortcutCard {
+                        iconName: "screen_share"
+                        label: I18n.tr("Mirror")
+                        shortcut: "3"
+                        disabled: !root.hasExternal
+                        onClicked: { NiriDS.mirrorDisplay(); root.close(); }
+                    }
+                    ShortcutCard {
                         iconName: "computer"
                         label: I18n.tr("Internal Only")
-                        shortcut: "3"
+                        shortcut: "4"
                         onClicked: { NiriDS.apply("internal_only"); root.close(); }
                     }
                 }
