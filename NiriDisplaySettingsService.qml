@@ -4,7 +4,6 @@ pragma ComponentBehavior: Bound
 import Quickshell
 import Quickshell.Io
 import QtQuick
-import qs.Common
 import qs.Services
 import qs.Modules.Plugins
 
@@ -179,7 +178,6 @@ Singleton {
             }
         });
     }
-
 
     function mirrorDisplay(): void {
         // Find internal + any external (regardless of disabled state).

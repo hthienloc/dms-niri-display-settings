@@ -177,7 +177,6 @@ DankModal {
                 Column {
                     width: parent.width
                     spacing: Theme.spacingS
-                    visible: true 
 
                     StyledText {
                         text: I18n.tr("Manual Control")
