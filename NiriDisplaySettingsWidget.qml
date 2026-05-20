@@ -83,17 +83,16 @@ PluginComponent {
                 }
 
                 if (totalOutputs > prevTotalOutputs) {
-                    const profileObj = pluginData?.profileOnConnect;
-                    let profileOnConnect = "";
-                    if (profileObj && typeof profileObj === 'object' && profileObj.value) {
-                        profileOnConnect = profileObj.value;
+                    const actionObj = pluginData?.connectionAction;
+                    let action = "show_menu"; // Default
+                    if (actionObj && typeof actionObj === 'object' && actionObj.value) {
+                        action = actionObj.value;
                     }
-                    const autoShow = pluginData?.autoShowOnConnect === true;
 
-                    if (profileOnConnect) {
-                        NiriDS.apply(profileOnConnect);
-                    } else if (autoShow) {
+                    if (action === "show_menu") {
                         Qt.callLater(() => root.openMenu());
+                    } else if (action !== "none") {
+                        NiriDS.apply(action);
                     }
                 } else if (lastOutputCount > 0 && current < lastOutputCount) {
                     // Display count decreased - external monitor unplugged

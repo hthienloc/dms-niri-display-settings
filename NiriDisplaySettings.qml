@@ -11,25 +11,19 @@ PluginSettings {
     SettingsCard {
         SectionTitle { text: I18n.tr("Automatic Behaviors") }
 
-        ToggleSetting {
-            settingKey: "autoShowOnConnect"
-            label: I18n.tr("Auto-show menu on connect")
-            description: I18n.tr("Automatically open the display selector when a new monitor is plugged in")
-            defaultValue: false
-        }
-
         SelectionSetting {
-            settingKey: "profileOnConnect"
-            label: I18n.tr("Profile on connect")
-            description: I18n.tr("Automatically apply this profile when an external monitor is connected")
+            settingKey: "connectionAction"
+            label: I18n.tr("When monitor is connected")
+            description: I18n.tr("Choose what happens automatically when an external monitor is plugged in")
             options: [
-                { label: I18n.tr("Show Menu"), value: "" },
+                { label: I18n.tr("Show Menu"), value: "show_menu" },
                 { label: I18n.tr("External Only"), value: "external_only" },
                 { label: I18n.tr("Extended"), value: "extend" },
                 { label: I18n.tr("Internal Only"), value: "internal_only" },
-                { label: I18n.tr("Mirror"), value: "mirror" }
+                { label: I18n.tr("Mirror"), value: "mirror" },
+                { label: I18n.tr("Do Nothing"), value: "none" }
             ]
-            defaultValue: ""
+            defaultValue: "show_menu"
         }
 
         ToggleSetting {
