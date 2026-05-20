@@ -14,6 +14,16 @@ Singleton {
     property var displays: []
     property var rawOutputs: ({} )
 
+    // Tracks the running wl-mirror process so it can be killed on mode switch
+    Process {
+        id: wlMirrorProc
+        running: false
+    }
+
+    function stopMirror(): void {
+        if (wlMirrorProc.running) wlMirrorProc.running = false;
+    }
+
     readonly property var internalPrefixes: ["edp", "lvds"]
 
     function isInternalName(name) {
@@ -70,6 +80,7 @@ Singleton {
 
     function toggleDisable(display: var): void {
         if (!display || !display.name) return;
+        stopMirror();
         const action = display.disabled ? "on" : "off";
         Proc.runCommand("niriDS:toggle", ["niri", "msg", "output", display.name, action], (out, code) => {
             if (code === 0) setDisplays();
@@ -77,6 +88,7 @@ Singleton {
     }
 
     function apply(profile: string): void {
+        stopMirror();
         const toProcess = [...displays];
         if (toProcess.length === 0) return;
 
@@ -176,13 +188,26 @@ Singleton {
     }
 
     function mirrorDisplay(): void {
-        // Mirror laptop (internal) content onto the external display
+        // Mirror laptop (internal) content onto the external display.
+        // Enable all outputs first so the external monitor turns on even if
+        // it was previously disabled (e.g. "Internal Only" mode).
         const internal = displays.find(d => isInternal(d));
-        const external = displays.find(d => !isInternal(d) && !d.disabled);
+        const external = displays.find(d => !isInternal(d));
         if (!internal || !external) return;
-        // execDetached launches wl-mirror as a fully independent process
-        // so it keeps running after this function returns
-        Quickshell.execDetached(["wl-mirror", "--fullscreen-output", external.name, internal.name]);
+
+        const toEnable = displays.filter(d => d.disabled);
+        function enableNext(i) {
+            if (i >= toEnable.length) {
+                Qt.callLater(() => {
+                    wlMirrorProc.command = ["wl-mirror", "--fullscreen-output", external.name, internal.name];
+                    wlMirrorProc.running = true;
+                    Qt.callLater(() => setDisplays());
+                });
+                return;
+            }
+            Proc.runCommand("niriDS:enable", ["niri", "msg", "output", toEnable[i].name, "on"], () => enableNext(i + 1));
+        }
+        enableNext(0);
     }
 
     Component.onCompleted: Qt.callLater(() => setDisplays())

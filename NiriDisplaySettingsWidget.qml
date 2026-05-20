@@ -53,6 +53,9 @@ PluginComponent {
         const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
         if (!enableFallback) return;
 
+        // Kill wl-mirror first — its target output just disappeared
+        NiriDS.stopMirror();
+
         NiriDS.enableInternalDisplay();
         Qt.callLater(() => NiriDS.enableInternalDisplay());
         Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
