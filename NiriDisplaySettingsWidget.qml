@@ -14,6 +14,11 @@ PluginComponent {
     IpcHandler {
         target: "niriDS"
 
+        readonly property bool hasExternal: {
+            const raw = NiriDS.rawOutputs || {};
+            return Object.keys(raw).some(n => n && !NiriDS.isInternalName(n));
+        }
+
         function open(): string {
             root.openMenu();
             return "SUCCESS";
@@ -30,17 +35,20 @@ PluginComponent {
         }
 
         function apply(profile: string): string {
+            const needsExternal = ["external_only", "extend", "mirror"].includes(profile);
+            if (needsExternal && !hasExternal) return "ERROR: no external display connected";
             NiriDS.apply(profile);
             return "SUCCESS";
         }
 
         function mirror(): string {
+            if (!hasExternal) return "ERROR: no external display connected";
             NiriDS.apply("mirror");
             return "SUCCESS";
         }
 
         function fallback(): string {
-            NiriDS.fallbackIfUnplugged();
+            NiriDS.enableInternalDisplay();
             return "SUCCESS";
         }
     }
