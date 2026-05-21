@@ -88,11 +88,9 @@ PluginComponent {
                 }
 
                 if (totalOutputs > prevTotalOutputs) {
-                    const actionObj = pluginData?.connectionAction;
-                    let action = "show_menu"; // Default
-                    if (actionObj && typeof actionObj === 'object' && actionObj.value) {
-                        action = actionObj.value;
-                    }
+                    const action = (typeof pluginData?.connectionAction === 'string' && pluginData.connectionAction)
+                        ? pluginData.connectionAction
+                        : "show_menu";
 
                     if (action === "show_menu") {
                         Qt.callLater(() => root.openMenu());
