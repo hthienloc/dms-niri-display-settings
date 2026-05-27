@@ -3,12 +3,13 @@
     "id": "niriDS",
     "name": "Niri Display Settings",
     "description": "Quickly toggle and configure display outputs in the Niri Wayland compositor",
-    "version": "1.9.0",
+    "version": "2.0.0",
     "author": "Loc Huynh",
     "icon": "computer",
-    "type": "daemon",
+    "type": "widget",
     "capabilities": [
-        "manage-displays"
+        "manage-displays",
+        "control-center"
     ],
     "component": "./NiriDisplaySettingsWidget.qml",
     "settings": "./NiriDisplaySettings.qml",
