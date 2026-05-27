@@ -8,6 +8,7 @@ PluginComponent {
     id: root
     pluginId: "niriDS"
     pluginService: PluginService
+    readonly property bool isDaemonInstance: root.parent !== null
 
     // Control Center Integration
     ccWidgetIcon: "computer"
@@ -29,6 +30,7 @@ PluginComponent {
 
     IpcHandler {
         target: "niriDS"
+        enabled: root.isDaemonInstance
 
         readonly property bool hasExternal: {
             const raw = NiriDS.rawOutputs || {};
@@ -83,7 +85,7 @@ PluginComponent {
         id: niriWatcher
         interval: 3000
         repeat: true
-        running: true
+        running: root.isDaemonInstance
 
         onTriggered: {
             const prevTotalOutputs = Object.keys(cachedRawOutputs || {}).length;
@@ -127,5 +129,22 @@ PluginComponent {
         modal.shouldBeVisible = true;
         modal.openCentered();
         NiriDS.setDisplays();
+    }
+
+    Component.onCompleted: {
+        if (root.isDaemonInstance && pluginService && pluginId) {
+            // 1. Register daemon component in pluginWidgetComponents dynamically
+            if (pluginService.pluginWidgetComponents && !pluginService.pluginWidgetComponents[pluginId]) {
+                const newWidgets = Object.assign({}, pluginService.pluginWidgetComponents);
+                newWidgets[pluginId] = pluginService.pluginDaemonComponents[pluginId];
+                pluginService.pluginWidgetComponents = newWidgets;
+            }
+            // 2. Bypass daemon filter in WidgetModel by updating in-memory type to widget
+            const plugins = pluginService.getLoadedPlugins ? pluginService.getLoadedPlugins() : [];
+            const pluginInfo = plugins.find(p => p.id === pluginId);
+            if (pluginInfo) {
+                pluginInfo.type = "widget";
+            }
+        }
     }
 }
