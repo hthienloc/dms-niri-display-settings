@@ -13,6 +13,7 @@ Singleton {
 
     property var displays: []
     property var rawOutputs: ({} )
+    readonly property alias mirrorRunning: wlMirrorProc.running
 
     // Tracks the running wl-mirror process so it can be killed on mode switch
     Process {

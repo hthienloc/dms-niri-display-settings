@@ -2,14 +2,19 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
-import "./dms-common"
 
 PluginSettings {
     id: root
     pluginId: "niriDS"
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Automatic Behaviors"); icon: "auto_awesome" }
+        StyledText {
+            width: parent.width
+            text: I18n.tr("Automatic Behaviors")
+            font.pixelSize: Theme.fontSizeMedium
+            font.weight: Font.Medium
+            color: Theme.surfaceText
+        }
 
         SelectionSetting {
             settingKey: "connectionAction"
@@ -42,10 +47,20 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Commands & Shortcuts"); icon: "keyboard" }
+        StyledText {
+            width: parent.width
+            text: I18n.tr("Commands & Shortcuts")
+            font.pixelSize: Theme.fontSizeMedium
+            font.weight: Font.Medium
+            color: Theme.surfaceText
+        }
 
-        InfoText {
+        StyledText {
+            width: parent.width
             text: I18n.tr("You can open, close, or toggle the Niri Display Settings modal using the dms CLI:")
+            font.pixelSize: Theme.fontSizeSmall
+            color: Theme.surfaceVariantText
+            wrapMode: Text.WordWrap
         }
 
         CopyBox {
@@ -68,16 +83,22 @@ PluginSettings {
             text: "dms ipc call niriDS apply internal_only"
         }
 
-        InfoText {
+        StyledText {
+            width: parent.width
             text: I18n.tr("Valid profiles: internal_only, external_only, extend, mirror")
             font.pixelSize: Theme.fontSizeSmall
+            color: Theme.surfaceVariantText
+            wrapMode: Text.WordWrap
             opacity: 0.7
         }
 
-        InfoText {
+        StyledText {
+            width: parent.width
             text: I18n.tr("To trigger the display selector using Mod+P, add this spawn command to your Niri configuration binds:")
+            font.pixelSize: Theme.fontSizeSmall
             color: Theme.primary
             font.italic: true
+            wrapMode: Text.WordWrap
         }
 
         CopyBox {
@@ -85,9 +106,4 @@ PluginSettings {
             text: "Mod+P { spawn \"dms\" \"ipc\" \"call\" \"niriDS\" \"toggle\"; }"
         }
     }
-
-    PluginAbout {
-        repoUrl: "https://github.com/hthienloc/dms-niri-display-settings"
-    }
-
 }
