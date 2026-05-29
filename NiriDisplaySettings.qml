@@ -2,14 +2,14 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
-import "../dms-common"
+import "./dms-common"
 
 PluginSettings {
     id: root
     pluginId: "niriDS"
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Automatic Behaviors") }
+        SectionTitle { text: I18n.tr("Automatic Behaviors"); icon: "auto_awesome" }
 
         SelectionSetting {
             settingKey: "connectionAction"
@@ -42,7 +42,7 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Commands & Shortcuts") }
+        SectionTitle { text: I18n.tr("Commands & Shortcuts"); icon: "keyboard" }
 
         InfoText {
             text: I18n.tr("You can open, close, or toggle the Niri Display Settings modal using the dms CLI:")
@@ -85,4 +85,9 @@ PluginSettings {
             text: "Mod+P { spawn \"dms\" \"ipc\" \"call\" \"niriDS\" \"toggle\"; }"
         }
     }
+
+    PluginAbout {
+        repoUrl: "https://github.com/hthienloc/dms-niri-display-settings"
+    }
+
 }

@@ -4,7 +4,7 @@ import qs.Common
 import qs.Modals.Common
 import qs.Services
 import qs.Widgets
-import "../dms-common"
+import "./dms-common"
 
 DankModal {
     id: root

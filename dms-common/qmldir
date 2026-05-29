@@ -1,0 +1,9 @@
+module dms.common
+CopyBox 1.0 CopyBox.qml
+HeaderRow 1.0 HeaderRow.qml
+InfoText 1.0 InfoText.qml
+PluginAbout 1.0 PluginAbout.qml
+SectionTitle 1.0 SectionTitle.qml
+SettingsCard 1.0 SettingsCard.qml
+ShortcutCard 1.0 ShortcutCard.qml
+StatusDot 1.0 StatusDot.qml
