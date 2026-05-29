@@ -15,6 +15,74 @@ PluginComponent {
     popoutWidth: 320
     popoutHeight: 0
 
+    NiriDisplaySettingsModal {
+        id: displayModal
+    }
+
+    IpcHandler {
+        target: "niriDS"
+
+        function toggle(): string {
+            if (displayModal.shouldBeVisible) {
+                displayModal.close();
+            } else {
+                displayModal.openCentered();
+            }
+            return "SUCCESS";
+        }
+
+        function open(): string {
+            displayModal.openCentered();
+            return "SUCCESS";
+        }
+
+        function close(): string {
+            displayModal.close();
+            return "SUCCESS";
+        }
+
+        function apply(profile: string): string {
+            if (profile === "internal_only" || profile === "external_only" || profile === "extend" || profile === "mirror") {
+                NiriDS.apply(profile);
+                return "SUCCESS";
+            }
+            return "ERROR: Invalid profile: " + profile;
+        }
+    }
+
+    property bool _registeredAsWidget: false
+    function registerAsWidget() {
+        if (_registeredAsWidget) return;
+        if (root.pluginId && root.pluginService) {
+            const pid = root.pluginId;
+            const ps = root.pluginService;
+            const comp = ps.pluginDaemonComponents[pid];
+            if (comp) {
+                const newComponents = Object.assign({}, ps.pluginWidgetComponents);
+                newComponents[pid] = comp;
+                ps.pluginWidgetComponents = newComponents;
+            }
+
+            const avail = ps.availablePlugins[pid];
+            if (avail) {
+                avail.type = "widget";
+            }
+            const loaded = ps.loadedPlugins[pid];
+            if (loaded) {
+                loaded.type = "widget";
+            }
+            ps.pluginListUpdated();
+            _registeredAsWidget = true;
+        }
+    }
+
+    Connections {
+        target: root
+        ignoreUnknownSignals: true
+        function onPluginServiceChanged() { root.registerAsWidget(); }
+        function onPluginIdChanged() { root.registerAsWidget(); }
+    }
+
     // --- CC Support ---
     ccWidgetIcon: "computer"
     ccWidgetPrimaryText: "Display Settings"
@@ -309,7 +377,7 @@ PluginComponent {
                                 id: manualItem
                                 width: parent.width
                                 implicitHeight: 48
-                                opacity: isOnlyEnabled && !modelData?.disabled ? 0.5 : 1.0
+                                opacity: isOnlyEnabled && !modelData?.disabled ? 0.5 : (manualItem.isOutputActive ? 1.0 : 0.5)
 
                                 property bool isOnlyEnabled: {
                                     const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
@@ -326,34 +394,36 @@ PluginComponent {
                                     property bool isFirst: index === 0
                                     property bool isLast: index === NiriDS.displays.length - 1
                                     
-                                    property real tlr: manualItem.isOutputActive ? 24 : (isFirst ? outerRadius : innerRadius)
-                                    property real trr: manualItem.isOutputActive ? 24 : (isFirst ? outerRadius : innerRadius)
-                                    property real blr: manualItem.isOutputActive ? 24 : (isLast ? outerRadius : innerRadius)
-                                    property real brr: manualItem.isOutputActive ? 24 : (isLast ? outerRadius : innerRadius)
+                                    property real tlr: manualItem.isOutputActive ? 23.5 : (isFirst ? outerRadius : innerRadius)
+                                    property real trr: manualItem.isOutputActive ? 23.5 : (isFirst ? outerRadius : innerRadius)
+                                    property real blr: manualItem.isOutputActive ? 23.5 : (isLast ? outerRadius : innerRadius)
+                                    property real brr: manualItem.isOutputActive ? 23.5 : (isLast ? outerRadius : innerRadius)
 
                                     property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
                                     property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
                                     property real blrAnim: blr; Behavior on blrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
                                     property real brrAnim: brr; Behavior on brrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
 
-                                    property color paintColor: manualItem.isOnlyEnabled ? "transparent" : (manualItem.isOutputActive
+                                    property color paintColor: manualItem.isOutputActive
                                         ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.18)
-                                        : manualItem.hovered
+                                        : (manualItem.hovered
                                             ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1)
                                             : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.04))
                                     
-                                    property color paintBorder: manualItem.isOnlyEnabled ? Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.05) : (manualItem.isOutputActive
+                                    property color paintBorder: manualItem.isOutputActive
                                         ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.6)
-                                        : manualItem.hovered
+                                        : (manualItem.hovered
                                             ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4)
                                             : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.15))
 
-                                    onTlrAnimChanged: if (width > 0) requestPaint()
-                                    onTrrAnimChanged: if (width > 0) requestPaint()
-                                    onBlrAnimChanged: if (width > 0) requestPaint()
-                                    onBrrAnimChanged: if (width > 0) requestPaint()
-                                    onPaintColorChanged: if (width > 0) requestPaint()
-                                    onPaintBorderChanged: if (width > 0) requestPaint()
+                                    onTlrAnimChanged: requestPaint()
+                                    onTrrAnimChanged: requestPaint()
+                                    onBlrAnimChanged: requestPaint()
+                                    onBrrAnimChanged: requestPaint()
+                                    onPaintColorChanged: requestPaint()
+                                    onPaintBorderChanged: requestPaint()
+                                    onWidthChanged: requestPaint()
+                                    onHeightChanged: requestPaint()
 
                                     onPaint: {
                                         var ctx = getContext("2d");

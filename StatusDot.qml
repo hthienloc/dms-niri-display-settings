@@ -6,7 +6,7 @@ Rectangle {
 
     property bool active: false
     property color activeColor: Theme.success
-    property color inactiveColor: Theme.surfaceVariant
+    property color inactiveColor: Theme.error
 
     width: 8
     height: 8
