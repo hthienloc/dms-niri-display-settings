@@ -39,29 +39,18 @@ DankModal {
     readonly property color roseGreenDot: "#4CAF50"
     readonly property color roseGreenPillBg: Theme.withAlpha(roseGreenPillBgBase, 0.7)
 
-    property string activeProfile: {
-        const dummy = NiriDS.displays ? NiriDS.displays.length : 0;
-        const dummyMirror = NiriDS.mirrorRunning;
-        const dummyOutputs = NiriDS.rawOutputs;
+    readonly property string activeProfile: NiriDS.activeProfile
 
-        const list = NiriDS.displays || [];
-        if (list.length === 0) return "";
-        const internal = list.filter(d => NiriDS.isInternal(d));
-        const external = list.filter(d => !NiriDS.isInternal(d));
-        
-        const anyInternalEnabled = internal.some(d => !d.disabled);
-        const anyExternalEnabled = external.some(d => !d.disabled);
-        
-        if (anyInternalEnabled && !anyExternalEnabled) {
-            return "internal_only";
+    onVisibleChanged: {
+        if (visible) {
+            NiriDS.detectFocusedOutput();
         }
-        if (!anyInternalEnabled && anyExternalEnabled) {
-            return "external_only";
+    }
+
+    onShouldBeVisibleChanged: {
+        if (shouldBeVisible) {
+            NiriDS.detectFocusedOutput();
         }
-        if (anyInternalEnabled && anyExternalEnabled) {
-            return NiriDS.mirrorRunning ? "mirror" : "extend";
-        }
-        return "";
     }
 
     component ProjectionCard: Item {
@@ -154,7 +143,7 @@ DankModal {
 
         // Active Badge in Bottom-Center
         Rectangle {
-            visible: projCard.isActive
+            visible: projCard.isActive && projCard.index !== 2
             height: 20
             width: 52
             radius: 10
@@ -202,6 +191,7 @@ DankModal {
             }
 
             StyledText {
+                visible: !(projCard.index === 2 && NiriDS.mirrorSourceFriendly && NiriDS.mirrorTargetFriendly)
                 text: projCard.desc
                 font.pixelSize: Theme.fontSizeSmall - 1
                 color: Theme.withAlpha(Theme.surfaceText, 0.6)
@@ -209,6 +199,42 @@ DankModal {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 width: parent.width
+            }
+
+            // Mirror Routing Chip (replaces description for Mirror card)
+            Rectangle {
+                visible: projCard.index === 2 && !!(NiriDS.mirrorSourceFriendly && NiriDS.mirrorTargetFriendly)
+                width: Math.min(parent.width - Theme.spacingS * 2, mirrorRouteLayout.implicitWidth + 24)
+                height: mirrorRouteLayout.implicitHeight + 8
+                radius: 10
+                color: projCard.isActive ? Theme.withAlpha(Theme.success, 0.15) : Theme.withAlpha(Theme.surfaceText, 0.06)
+                border.width: 1
+                border.color: projCard.isActive ? Theme.withAlpha(Theme.success, 0.3) : Theme.withAlpha(Theme.surfaceText, 0.12)
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                RowLayout {
+                    id: mirrorRouteLayout
+                    width: parent.width - 24
+                    anchors.centerIn: parent
+                    spacing: 6
+                    
+                    Rectangle {
+                        width: 6; height: 6; radius: 3
+                        color: projCard.isActive ? Theme.success : Theme.surfaceVariantText
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    
+                    StyledText {
+                        id: mirrorRouteText
+                        text: NiriDS.mirrorSourceFriendly + " ⇒ " + NiriDS.mirrorTargetFriendly
+                        font.pixelSize: Theme.fontSizeSmall - 2
+                        font.weight: Font.Bold
+                        color: projCard.isActive ? Theme.success : Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
             }
         }
 
@@ -346,6 +372,7 @@ DankModal {
                 name: (manualCard.displayData && manualCard.displayData.name && NiriDS.isInternalName(manualCard.displayData.name)) ? "computer" : "tv"
                 size: 32
                 color: manualCard.isActive ? Theme.primary : Theme.surfaceVariantText
+                filled: !manualCard.isActive
                 anchors.horizontalCenter: parent.horizontalCenter
                 scale: manualCard.isActive ? 1.05 : (manualCard.hovered ? 1.15 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }

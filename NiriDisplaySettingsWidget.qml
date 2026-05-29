@@ -26,12 +26,14 @@ PluginComponent {
             if (displayModal.shouldBeVisible) {
                 displayModal.close();
             } else {
+                NiriDS.detectFocusedOutput();
                 displayModal.openCentered();
             }
             return "SUCCESS";
         }
 
         function open(): string {
+            NiriDS.detectFocusedOutput();
             displayModal.openCentered();
             return "SUCCESS";
         }
@@ -134,26 +136,7 @@ PluginComponent {
         return Object.keys(raw).some(n => n && !NiriDS.isInternalName(n));
     }
 
-    readonly property string activeProfile: {
-        const list = NiriDS.displays || [];
-        if (list.length === 0) return "";
-        const internal = list.filter(d => NiriDS.isInternal(d));
-        const external = list.filter(d => !NiriDS.isInternal(d));
-        
-        const anyInternalEnabled = internal.some(d => !d.disabled);
-        const anyExternalEnabled = external.some(d => !d.disabled);
-        
-        if (anyInternalEnabled && !anyExternalEnabled) {
-            return "internal_only";
-        }
-        if (!anyInternalEnabled && anyExternalEnabled) {
-            return "external_only";
-        }
-        if (anyInternalEnabled && anyExternalEnabled) {
-            return NiriDS.mirrorRunning ? "mirror" : "extend";
-        }
-        return "";
-    }
+    readonly property string activeProfile: NiriDS.activeProfile
 
     readonly property int optionCount: NiriDS.displays ? NiriDS.displays.length : 0
 
@@ -394,10 +377,13 @@ PluginComponent {
                                     property bool isFirst: index === 0
                                     property bool isLast: index === NiriDS.displays.length - 1
                                     
-                                    property real tlr: manualItem.isOutputActive ? 23.5 : (isFirst ? outerRadius : innerRadius)
-                                    property real trr: manualItem.isOutputActive ? 23.5 : (isFirst ? outerRadius : innerRadius)
-                                    property real blr: manualItem.isOutputActive ? 23.5 : (isLast ? outerRadius : innerRadius)
-                                    property real brr: manualItem.isOutputActive ? 23.5 : (isLast ? outerRadius : innerRadius)
+                                    property bool isPrevActive: index > 0 && NiriDS.displays && NiriDS.displays[index - 1] && !NiriDS.displays[index - 1].disabled
+                                    property bool isNextActive: index < NiriDS.displays.length - 1 && NiriDS.displays && NiriDS.displays[index + 1] && !NiriDS.displays[index + 1].disabled
+
+                                    property real tlr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
+                                    property real trr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
+                                    property real blr: manualItem.isOutputActive ? 23.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
+                                    property real brr: manualItem.isOutputActive ? 23.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
 
                                     property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
                                     property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
@@ -464,6 +450,7 @@ PluginComponent {
                                     name: (modelData && modelData.name && NiriDS.isInternalName(modelData.name)) ? "computer" : "tv"
                                     size: Theme.iconSize - 4
                                     color: Theme.surfaceText
+                                    filled: !manualItem.isOutputActive
                                     anchors.left: parent.left
                                     anchors.leftMargin: Theme.spacingM
                                     anchors.verticalCenter: parent.verticalCenter
