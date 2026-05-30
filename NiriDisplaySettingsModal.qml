@@ -55,6 +55,22 @@ DankModal {
         const raw = SettingsData.getPluginSetting("niriDS", "showDisplayProfiles", false);
         return raw === true || raw === "true";
     }
+
+    readonly property real backdropDim: {
+        const _ = SettingsData.pluginSettings;
+        const val = pluginData ? pluginData.backdropDim : undefined;
+        if (val !== undefined) return parseFloat(val);
+        const raw = SettingsData.getPluginSetting("niriDS", "backdropDim", 0.2);
+        return parseFloat(raw);
+    }
+
+    readonly property real uiTransparency: {
+        const _ = SettingsData.pluginSettings;
+        const val = pluginData ? pluginData.uiTransparency : undefined;
+        if (val !== undefined) return parseFloat(val);
+        const raw = SettingsData.getPluginSetting("niriDS", "uiTransparency", 0.5);
+        return parseFloat(raw);
+    }
     readonly property var displayProfilesList: {
         const profiles = DisplayConfigState.validatedProfiles || {};
         const list = [];
@@ -429,8 +445,10 @@ DankModal {
             DankIcon {
                 name: profCard.iconName
                 size: 18
-                color: profCard.isActive ? Theme.primary : Theme.surfaceText
+                color: profCard.isActive ? Theme.primary : (profCard.hovered ? Theme.primary : Theme.surfaceText)
                 Layout.alignment: Qt.AlignVCenter
+                scale: profCard.hovered ? 1.15 : 1.0
+                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                 Behavior on color { ColorAnimation { duration: 250 } }
             }
 
@@ -478,6 +496,8 @@ DankModal {
         }
         property bool isLoading: false
         property bool hovered: cardHover.containsMouse
+        // Signal emitted on right-click or press-and-hold to open the advanced panel
+        signal requestCustomization(var displayData)
 
         property int totalCount: root.filteredDisplays ? root.filteredDisplays.length : 0
         property real innerRadius: 6
@@ -645,13 +665,23 @@ DankModal {
             id: cardHover
             anchors.fill: parent
             hoverEnabled: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             cursorShape: manualCard.isOnlyEnabled || manualCard.isLoading ? Qt.ArrowCursor : Qt.PointingHandCursor
             onPressed: (mouse) => { if (!manualCard.isOnlyEnabled && !manualCard.isLoading) manualRipple.trigger(mouse.x, mouse.y); }
-            onClicked: {
-                if (!manualCard.isOnlyEnabled && !manualCard.isLoading) {
-                    manualCard.isLoading = true;
-                    NiriDS.toggleDisable(manualCard.displayData);
-                    resetTimer.start();
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton) {
+                    manualCard.requestCustomization(manualCard.displayData);
+                } else if (mouse.button === Qt.LeftButton) {
+                    if (!manualCard.isOnlyEnabled && !manualCard.isLoading) {
+                        manualCard.isLoading = true;
+                        NiriDS.toggleDisable(manualCard.displayData);
+                        resetTimer.start();
+                    }
+                }
+            }
+            onPressAndHold: (mouse) => {
+                if (mouse.button === Qt.LeftButton) {
+                    manualCard.requestCustomization(manualCard.displayData);
                 }
             }
         }
@@ -782,6 +812,7 @@ DankModal {
     property int rateIndex: 0
     property real brightnessValue: 0.8
     property int selectedIndex: 0
+    property var activeCustomizationDisplay: null
     property int optionCount: root.filteredDisplays ? root.filteredDisplays.length : 0
     property rect parentBounds: Qt.rect(0, 0, 0, 0)
     property bool hasExternal: {
@@ -831,7 +862,17 @@ DankModal {
         });
     }
 
+    onDialogClosed: () => {
+        activeCustomizationDisplay = null;
+    }
+
     modalFocusScope.Keys.onPressed: event => {
+        if (event.key === Qt.Key_Escape && customizationOverlay.active) {
+            root.activeCustomizationDisplay = null;
+            event.accepted = true;
+            return;
+        }
+
         function getNextEnabledIndex(current, direction) {
             const displays = root.filteredDisplays || [];
             let count = 0;
@@ -901,8 +942,10 @@ DankModal {
                     onClicked: root.close()
 
                     Rectangle {
-                        anchors.fill: parent
-                        color: Theme.withAlpha(root.blackColor, 0.6)
+                        anchors.centerIn: parent
+                        width: parent.width * 1.5
+                        height: parent.height * 1.5
+                        color: Theme.withAlpha(root.blackColor, root.backdropDim)
                     }
                 }
 
@@ -911,11 +954,13 @@ DankModal {
                     id: dashboardCard
                     width: Math.min(1080, parent.width - 40)
                     height: Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 40)
+                    Behavior on height { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
                     anchors.centerIn: parent
                     radius: Theme.cornerRadius * 1.8
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, root.uiTransparency)
                     border.width: 1
                     border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                    clip: true
 
                     // Intercept clicks inside the dashboard card so they don't bubble up to close the modal
                     MouseArea {
@@ -929,6 +974,10 @@ DankModal {
                         anchors.right: parent.right
                         anchors.margins: Theme.spacingL
                         spacing: Theme.spacingL
+
+                        opacity: customizationOverlay.active ? 0.0 : 1.0
+                        enabled: !customizationOverlay.active
+                        Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
 
                         // 1. Dashboard Header (same style as CC widget header)
                         StyledRect {
@@ -1165,6 +1214,7 @@ DankModal {
                                                 delegate: ManualDisplayCard {
                                                     cardIndex: index
                                                     displayData: modelData
+                                                    onRequestCustomization: (d) => { root.activeCustomizationDisplay = d; }
                                                 }
                                             }
                                         }
@@ -1245,9 +1295,467 @@ DankModal {
                                 }
                             }
                         }
+                    } // Close mainLayout early so customizationOverlay is a direct sibling of mainLayout inside dashboardCard
+
+                    // Customization Panel Overlay
+                    StyledRect {
+                        id: customizationOverlay
+                        x: 0
+                        width: parent.width
+                        height: parent.height
+                        radius: parent.radius
+                        color: "transparent"
+                        border.width: 0
+                        z: 10
+                        clip: true
+
+                        property bool active: root.activeCustomizationDisplay !== null
+                        property var displayData: root.activeCustomizationDisplay
+
+                        y: active ? 0 : -customizationOverlay.height
+                        Behavior on y { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+
+                        visible: active || y > -customizationOverlay.height
+
+                        // Inner rounded card — this clips correctly to the parent's radius
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: customizationOverlay.radius
+                            color: "transparent"
+                            border.width: 0
+                            border.color: "transparent"
+                            clip: true
+                        }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                            }
+
+                            function getRawTransform(tVal) {
+                                const transformMap = {
+                                    "Normal": "normal",
+                                    "90": "90",
+                                    "180": "180",
+                                    "270": "270",
+                                    "Flipped": "flipped",
+                                    "Flipped90": "flipped-90",
+                                    "Flipped180": "flipped-180",
+                                    "Flipped270": "flipped-270"
+                                };
+                                return transformMap[tVal] || "normal";
+                            }
+
+                            function applySetting(key, val) {
+                                if (!displayData) return;
+                                const name = displayData.name;
+                                const config = {};
+                                if (key === "mode") config.mode = val;
+                                else if (key === "scale") config.scale = parseFloat(val);
+                                else if (key === "transform") config.transform = getRawTransform(val);
+                                else if (key === "vrr") config.vrr = (val !== I18n.tr("Off"));
+
+                                NiriService.applyOutputConfig(name, config, (success, msg) => {
+                                    if (success) {
+                                        const baseOutputs = DisplayConfigState.outputs;
+                                        const outputsCopy = JSON.parse(JSON.stringify(baseOutputs || {}));
+
+                                        if (outputsCopy[name]) {
+                                            if (key === "mode") {
+                                                const idx = outputsCopy[name].modes.findIndex(m => DisplayConfigState.formatMode(m) === val);
+                                                if (idx >= 0) outputsCopy[name].current_mode = idx;
+                                            } else if (key === "scale") {
+                                                if (!outputsCopy[name].logical) outputsCopy[name].logical = {};
+                                                outputsCopy[name].logical.scale = parseFloat(val);
+                                            } else if (key === "transform") {
+                                                if (!outputsCopy[name].logical) outputsCopy[name].logical = {};
+                                                outputsCopy[name].logical.transform = val;
+                                            } else if (key === "vrr") {
+                                                outputsCopy[name].vrr_enabled = (val !== I18n.tr("Off"));
+                                            }
+                                        }
+
+                                        const identifier = DisplayConfigState.getNiriOutputIdentifier(NiriDS.rawOutputs[name], name);
+                                        if (key === "vrr") {
+                                            const vrrOnDemand = (val === I18n.tr("On-Demand"));
+                                            SettingsData.setNiriOutputSetting(identifier, "vrrOnDemand", vrrOnDemand);
+                                            SettingsData.saveSettings();
+                                        }
+
+                                        NiriService.generateOutputsConfig(outputsCopy);
+                                        NiriDS.setDisplays();
+                                    }
+                                });
+                            }
+
+                            property var modesList: {
+                                if (!displayData || !NiriDS.rawOutputs || !NiriDS.rawOutputs[displayData.name])
+                                    return [];
+                                const raw = NiriDS.rawOutputs[displayData.name];
+                                const rawModes = raw.modes || [];
+                                const sortedModes = [...rawModes];
+                                sortedModes.sort((a, b) => {
+                                    if (a.width !== b.width) return b.width - a.width;
+                                    if (a.height !== b.height) return b.height - a.height;
+                                    return (b.refresh_rate || 0) - (a.refresh_rate || 0);
+                                });
+                                return sortedModes;
+                            }
+
+                            property var modeOptions: {
+                                const opts = [];
+                                for (let i = 0; i < modesList.length; i++) {
+                                    const formatted = DisplayConfigState.formatMode(modesList[i]);
+                                    if (!opts.includes(formatted)) {
+                                        opts.push(formatted);
+                                    }
+                                }
+                                return opts;
+                            }
+
+                            property string currentModeString: {
+                                // Niri JSON uses 'is_current', fallback to 'current'
+                                const currentMode = modesList.find(m => m.is_current || m.current);
+                                return currentMode ? DisplayConfigState.formatMode(currentMode) : (modeOptions.length > 0 ? modeOptions[0] : "");
+                            }
+
+                            // Advanced Configuration Header Card (same style as fullscreen UI header)
+                            StyledRect {
+                                id: overlayHeaderCard
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.margins: Theme.spacingL
+                                height: 72
+                                radius: Theme.cornerRadius
+                                color: Theme.withAlpha(Theme.surfaceContainerHigh, root.uiTransparency)
+                                border.width: 1
+                                border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: Theme.spacingM
+                                    spacing: Theme.spacingM
+
+                                    // Display icon badge
+                                    Rectangle {
+                                        width: 36; height: 36; radius: 18
+                                        color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.2)
+                                        DankIcon {
+                                            name: (customizationOverlay.displayData && NiriDS.isInternalName(customizationOverlay.displayData.name)) ? "computer" : "tv"
+                                            size: 18; color: Theme.primary; anchors.centerIn: parent
+                                        }
+                                    }
+
+                                    Column {
+                                        Layout.fillWidth: true
+                                        Layout.alignment: Qt.AlignVCenter
+                                        spacing: 0
+
+                                        StyledText {
+                                            text: customizationOverlay.displayData ? customizationOverlay.displayData.friendlyName : ""
+                                            font.bold: true
+                                            font.pixelSize: Theme.fontSizeMedium
+                                            color: Theme.surfaceText
+                                        }
+
+                                        StyledText {
+                                            text: customizationOverlay.displayData ? (I18n.tr("Advanced Configuration") + " · " + customizationOverlay.displayData.name) : ""
+                                            font.pixelSize: Theme.fontSizeSmall - 1
+                                            color: Theme.primary
+                                            opacity: 0.8
+                                        }
+                                    }
+
+                                    // Close button
+                                    Item {
+                                        id: overlayCloseBtn
+                                        width: 38; height: 38
+                                        Layout.alignment: Qt.AlignVCenter
+                                        scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.1 : 1.0)
+                                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: Theme.cornerRadius
+                                            color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
+                                            border.width: 1
+                                            border.color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.3) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                                            Behavior on color { ColorAnimation { duration: 500 } }
+                                            Behavior on border.color { ColorAnimation { duration: 500 } }
+                                        }
+
+                                        DankIcon {
+                                            name: "close"
+                                            size: 18
+                                            color: closeMouse.containsMouse ? "#e53935" : Theme.primary
+                                            rotation: closeMouse.containsMouse ? 360 : 0
+                                            anchors.centerIn: parent
+
+                                            Behavior on rotation {
+                                                NumberAnimation { duration: 750; easing.type: Easing.OutCubic }
+                                            }
+                                            Behavior on color {
+                                                ColorAnimation { duration: 500 }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: closeMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.activeCustomizationDisplay = null
+                                        }
+
+                                        DankRipple {
+                                            anchors.fill: parent
+                                            cornerRadius: Theme.cornerRadius
+                                            rippleColor: closeMouse.containsMouse ? "#e53935" : Theme.primary
+                                        }
+                                    }
+                                }
+                            }
+
+                            Flickable {
+                                anchors.top: overlayHeaderCard.bottom
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.leftMargin: Theme.spacingL
+                                anchors.rightMargin: Theme.spacingL
+                                anchors.topMargin: Theme.spacingM
+                                anchors.bottomMargin: Theme.spacingS
+                                contentHeight: contentCol.implicitHeight
+                                clip: true
+                                flickableDirection: Flickable.VerticalFlick
+                                boundsBehavior: Flickable.StopAtBounds
+
+                                ColumnLayout {
+                                    id: contentCol
+                                    width: parent.width
+                                    spacing: Theme.spacingS
+
+                                    // ── Resolution & Refresh Rate ──────────────────────
+                                    StyledRect {
+                                        Layout.fillWidth: true
+                                        height: resModeCol.implicitHeight + Theme.spacingM * 2
+                                        radius: Theme.cornerRadius
+                                        color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
+                                        border.width: 1
+                                        border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12)
+
+                                        ColumnLayout {
+                                            id: resModeCol
+                                            anchors { fill: parent; margins: Theme.spacingM }
+                                            spacing: Theme.spacingS
+
+                                            RowLayout {
+                                                spacing: Theme.spacingXS
+                                                DankIcon { name: "aspect_ratio"; size: 14; color: Theme.primary }
+                                                StyledText {
+                                                    text: I18n.tr("Resolution & Refresh Rate")
+                                                    font.pixelSize: Theme.fontSizeSmall
+                                                    font.weight: Font.DemiBold
+                                                    color: Theme.primary
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            DankDropdown {
+                                                id: resDropdown
+                                                Layout.fillWidth: true
+                                                dropdownWidth: parent.width
+                                                currentValue: customizationOverlay.currentModeString
+                                                options: customizationOverlay.modeOptions
+                                                onValueChanged: (val) => { customizationOverlay.applySetting("mode", val); }
+                                            }
+                                        }
+                                    }
+
+                                    // ── Scale & Transform ──────────────────────────────
+                                    StyledRect {
+                                        Layout.fillWidth: true
+                                        height: scaleTransformCol.implicitHeight + Theme.spacingM * 2
+                                        radius: Theme.cornerRadius
+                                        color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
+                                        border.width: 1
+                                        border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12)
+
+                                        ColumnLayout {
+                                            id: scaleTransformCol
+                                            anchors { fill: parent; margins: Theme.spacingM }
+                                            spacing: Theme.spacingS
+
+                                            RowLayout {
+                                                spacing: Theme.spacingXS
+                                                DankIcon { name: "open_with"; size: 14; color: Theme.primary }
+                                                StyledText {
+                                                    text: I18n.tr("Scale & Transform")
+                                                    font.pixelSize: Theme.fontSizeSmall
+                                                    font.weight: Font.DemiBold
+                                                    color: Theme.primary
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: Theme.spacingM
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: Theme.spacingXS
+                                                    StyledText {
+                                                        text: I18n.tr("Scale")
+                                                        font.pixelSize: Theme.fontSizeSmall
+                                                        color: Theme.surfaceVariantText
+                                                    }
+                                                    DankDropdown {
+                                                        id: scaleDrop
+                                                        Layout.fillWidth: true
+                                                        dropdownWidth: parent.width
+                                                        property var scaleOptions: ["0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "2.25", "2.5", "2.75", "3"]
+                                                        currentValue: {
+                                                            if (!customizationOverlay.displayData) return "1";
+                                                            const raw = NiriDS.rawOutputs[customizationOverlay.displayData.name];
+                                                            const scale = (raw && raw.logical) ? (raw.logical.scale || 1.0) : 1.0;
+                                                            // Match against option strings exactly
+                                                            const str = parseFloat(scale.toFixed(2)).toString();
+                                                            return scaleOptions.includes(str) ? str : str;
+                                                        }
+                                                        options: scaleOptions
+                                                        onValueChanged: (val) => { customizationOverlay.applySetting("scale", val); }
+                                                    }
+                                                }
+
+                                                ColumnLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: Theme.spacingXS
+                                                    StyledText {
+                                                        text: I18n.tr("Transform")
+                                                        font.pixelSize: Theme.fontSizeSmall
+                                                        color: Theme.surfaceVariantText
+                                                    }
+                                                    DankDropdown {
+                                                        id: transformDrop
+                                                        Layout.fillWidth: true
+                                                        dropdownWidth: parent.width
+                                                        currentValue: {
+                                                            if (!customizationOverlay.displayData) return I18n.tr("Normal");
+                                                            const raw = NiriDS.rawOutputs[customizationOverlay.displayData.name];
+                                                            const transform = (raw && raw.logical) ? (raw.logical.transform || "Normal") : "Normal";
+                                                            const t = transform === "normal" ? "Normal" : transform;
+                                                            return DisplayConfigState.getTransformLabel(t);
+                                                        }
+                                                        options: [I18n.tr("Normal"), I18n.tr("90°"), I18n.tr("180°"), I18n.tr("270°"), I18n.tr("Flipped"), I18n.tr("Flipped 90°"), I18n.tr("Flipped 180°"), I18n.tr("Flipped 270°")]
+                                                        onValueChanged: (val) => { customizationOverlay.applySetting("transform", val); }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // ── VRR ───────────────────────────────────────────
+                                    StyledRect {
+                                        Layout.fillWidth: true
+                                        height: vrrCol.implicitHeight + Theme.spacingM * 2
+                                        radius: Theme.cornerRadius
+                                        color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
+                                        border.width: 1
+                                        border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12)
+
+                                        ColumnLayout {
+                                            id: vrrCol
+                                            anchors { fill: parent; margins: Theme.spacingM }
+                                            spacing: Theme.spacingS
+
+                                            RowLayout {
+                                                spacing: Theme.spacingXS
+                                                DankIcon { name: "speed"; size: 14; color: Theme.primary }
+                                                StyledText {
+                                                    text: I18n.tr("Variable Refresh Rate")
+                                                    font.pixelSize: Theme.fontSizeSmall
+                                                    font.weight: Font.DemiBold
+                                                    color: Theme.primary
+                                                    Layout.fillWidth: true
+                                                }
+                                            }
+
+                                            DankDropdown {
+                                                id: vrrDrop
+                                                Layout.fillWidth: true
+                                                dropdownWidth: parent.width
+                                                currentValue: {
+                                                    if (!customizationOverlay.displayData) return I18n.tr("Off");
+                                                    const name = customizationOverlay.displayData.name;
+                                                    const identifier = DisplayConfigState.getNiriOutputIdentifier(NiriDS.rawOutputs[name], name);
+                                                    const niriSettings = SettingsData.getNiriOutputSettings(identifier);
+                                                    if (niriSettings && niriSettings.vrrOnDemand) return I18n.tr("On-Demand");
+                                                    const raw = NiriDS.rawOutputs[name];
+                                                    const vrrEnabled = raw && (raw.vrr_enabled || raw.variable_refresh_rate === "enabled" || raw.variable_refresh_rate === "on");
+                                                    return vrrEnabled ? I18n.tr("On") : I18n.tr("Off");
+                                                }
+                                                options: [I18n.tr("Off"), I18n.tr("On"), I18n.tr("On-Demand")]
+                                                onValueChanged: (val) => { customizationOverlay.applySetting("vrr", val); }
+                                            }
+                                        }
+                                    }
+
+                                    // ── Layout ────────────────────────────────────────
+                                    StyledRect {
+                                        Layout.fillWidth: true
+                                        height: 56
+                                        radius: Theme.cornerRadius
+                                        color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
+                                        border.width: 1
+                                        border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12)
+
+                                        RowLayout {
+                                            anchors { fill: parent; leftMargin: Theme.spacingM; rightMargin: Theme.spacingM }
+                                            spacing: Theme.spacingS
+
+                                            DankIcon { name: "view_column"; size: 16; color: Theme.surfaceText }
+
+                                            StyledText {
+                                                text: I18n.tr("Center Single Column")
+                                                font.pixelSize: Theme.fontSizeMedium - 1
+                                                font.weight: Font.Medium
+                                                color: Theme.surfaceText
+                                                Layout.fillWidth: true
+                                            }
+
+                                            DankToggle {
+                                                id: centerSingleColumnToggle
+                                                checked: {
+                                                    if (!customizationOverlay.displayData) return false;
+                                                    const name = customizationOverlay.displayData.name;
+                                                    const identifier = DisplayConfigState.getNiriOutputIdentifier(NiriDS.rawOutputs[name], name);
+                                                    const niriSettings = SettingsData.getNiriOutputSettings(identifier);
+                                                    return (niriSettings && niriSettings.layout && niriSettings.layout.alwaysCenterSingleColumn) ?? false;
+                                                }
+                                                onToggled: (checked) => {
+                                                    if (!customizationOverlay.displayData) return;
+                                                    const name = customizationOverlay.displayData.name;
+                                                    const identifier = DisplayConfigState.getNiriOutputIdentifier(NiriDS.rawOutputs[name], name);
+                                                    const niriSettings = SettingsData.getNiriOutputSettings(identifier) || {};
+                                                    const layout = niriSettings.layout || {};
+                                                    if (checked) layout.alwaysCenterSingleColumn = true;
+                                                    else delete layout.alwaysCenterSingleColumn;
+                                                    niriSettings.layout = Object.keys(layout).length > 0 ? layout : null;
+                                                    SettingsData.setNiriOutputSetting(identifier, "layout", niriSettings.layout);
+                                                    SettingsData.saveSettings();
+                                                    NiriService.generateOutputsConfig(DisplayConfigState.outputs);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                     }
                 }
             }
         }
     }
 }
+

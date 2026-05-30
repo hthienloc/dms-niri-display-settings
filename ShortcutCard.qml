@@ -40,12 +40,14 @@ Item {
             : card.hovered
                 ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1)
                 : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.04))
+        Behavior on paintColor { ColorAnimation { duration: 150 } }
         
         property color paintBorder: card.disabled ? Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.05) : (card.isActive
             ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.6)
             : card.hovered
                 ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4)
                 : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.15))
+        Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
         onTlrAnimChanged: requestPaint()
         onTrrAnimChanged: requestPaint()
@@ -56,8 +58,8 @@ Item {
 
         onPaint: {
             var ctx = getContext("2d");
-            var x = 1, y = 1;
-            var w = width - 2, h = height - 2;
+            var x = 0.5, y = 0.5;
+            var w = width - 1, h = height - 1;
             
             ctx.reset();
             ctx.beginPath();
@@ -77,12 +79,6 @@ Item {
             ctx.strokeStyle = paintBorder.toString();
             ctx.lineWidth = 1;
             ctx.stroke();
-        }
-
-        Rectangle { 
-            anchors.fill: parent; radius: parent.tlrAnim; color: "white"
-            anchors.margins: 0.5
-            opacity: card.hovered ? 0.05 : 0; Behavior on opacity { NumberAnimation { duration: 150 } } 
         }
     }
 

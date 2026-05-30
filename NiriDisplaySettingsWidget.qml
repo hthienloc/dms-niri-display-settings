@@ -28,6 +28,7 @@ PluginComponent {
             if (displayModal.shouldBeVisible) {
                 displayModal.close();
             } else {
+                displayModal.activeCustomizationDisplay = null;
                 NiriDS.detectFocusedOutput();
                 NiriDS.setDisplays();
                 displayModal.openCentered();
@@ -36,6 +37,7 @@ PluginComponent {
         }
 
         function open(): string {
+            displayModal.activeCustomizationDisplay = null;
             NiriDS.detectFocusedOutput();
             NiriDS.setDisplays();
             displayModal.openCentered();
@@ -229,6 +231,8 @@ PluginComponent {
                             font.pixelSize: Theme.fontSizeSmall - 1; color: Theme.primary; opacity: 0.8
                         }
                     }
+
+
 
                     Item {
                         id: refreshBtnItem
@@ -444,12 +448,14 @@ PluginComponent {
                                         : (manualItem.hovered
                                             ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1)
                                             : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.04))
+                                    Behavior on paintColor { ColorAnimation { duration: 150 } }
                                     
                                     property color paintBorder: manualItem.isOutputActive
                                         ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.6)
                                         : (manualItem.hovered
                                             ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4)
                                             : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.15))
+                                    Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
                                     onTlrAnimChanged: requestPaint()
                                     onTrrAnimChanged: requestPaint()
@@ -462,8 +468,8 @@ PluginComponent {
 
                                     onPaint: {
                                         var ctx = getContext("2d");
-                                        var x = 1, y = 1;
-                                        var w = width - 2, h = height - 2;
+                                        var x = 0.5, y = 0.5;
+                                        var w = width - 1, h = height - 1;
                                         
                                         ctx.reset();
                                         ctx.beginPath();
@@ -483,12 +489,6 @@ PluginComponent {
                                         ctx.strokeStyle = paintBorder.toString();
                                         ctx.lineWidth = 1;
                                         ctx.stroke();
-                                    }
-
-                                    Rectangle { 
-                                        anchors.fill: parent; radius: parent.tlrAnim; color: "white"
-                                        anchors.margins: 0.5
-                                        opacity: manualItem.hovered && !manualItem.isOnlyEnabled ? 0.05 : 0; Behavior on opacity { NumberAnimation { duration: 150 } } 
                                     }
                                 }
 
@@ -556,14 +556,22 @@ PluginComponent {
                                     id: itemHover
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     cursorShape: manualItem.isOnlyEnabled || manualItem.isLoading ? Qt.ArrowCursor : Qt.PointingHandCursor
                                     onPressed: (mouse) => { if (!manualItem.isLoading) pRip.trigger(mouse.x, mouse.y); }
-                                    onClicked: {
-                                        if (!manualItem.isOnlyEnabled && !manualItem.isLoading) {
-                                            manualItem.isLoading = true;
-                                            NiriDS.toggleDisable(modelData);
-                                            // Reset loading state after a timeout just in case it fails or the array replacement takes time
-                                            resetTimer.start();
+                                    onClicked: (mouse) => {
+                                        if (mouse.button === Qt.RightButton) {
+                                            displayModal.activeCustomizationDisplay = modelData;
+                                            NiriDS.detectFocusedOutput();
+                                            NiriDS.setDisplays();
+                                            displayModal.openCentered();
+                                        } else {
+                                            if (!manualItem.isOnlyEnabled && !manualItem.isLoading) {
+                                                manualItem.isLoading = true;
+                                                NiriDS.toggleDisable(modelData);
+                                                // Reset loading state after a timeout just in case it fails or the array replacement takes time
+                                                resetTimer.start();
+                                            }
                                         }
                                     }
                                 }
