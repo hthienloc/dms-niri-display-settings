@@ -13,15 +13,124 @@ Singleton {
 
     property var displays: []
     property var rawOutputs: ({} )
+    property int wlMirrorPid: 0
+    readonly property bool mirrorRunning: wlMirrorPid > 0
 
-    // Tracks the running wl-mirror process so it can be killed on mode switch
+    readonly property string activeProfile: {
+        // Explicitly list dependencies to ensure full reactivity in QML
+        let _dep1 = root.displays;
+        let _dep2 = root.mirrorRunning;
+
+        const list = root.displays || [];
+        if (list.length === 0) return "";
+        const internal = list.filter(d => root.isInternal(d));
+        const external = list.filter(d => !root.isInternal(d));
+        
+        const anyInternalEnabled = internal.some(d => !d.disabled);
+        const anyExternalEnabled = external.some(d => !d.disabled);
+        
+        if (anyInternalEnabled && !anyExternalEnabled) {
+            return "internal_only";
+        }
+        if (!anyInternalEnabled && anyExternalEnabled) {
+            return "external_only";
+        }
+        if (anyInternalEnabled && anyExternalEnabled) {
+            return root.mirrorRunning ? "mirror" : "extend";
+        }
+        return "";
+    }
+
+    property string focusedOutputName: ""
+
+    readonly property string mirrorSourceFriendly: {
+        if (displays.length < 2) return "";
+        let source = displays.find(d => d.name === root.focusedOutputName);
+        if (!source) {
+            source = displays.find(d => isInternal(d)) || displays[0];
+        }
+        return source ? source.friendlyName : "";
+    }
+
+    readonly property string mirrorTargetFriendly: {
+        if (displays.length < 2) return "";
+        let source = displays.find(d => d.name === root.focusedOutputName);
+        if (!source) {
+            source = displays.find(d => isInternal(d)) || displays[0];
+        }
+        let target = displays.find(d => d.name !== source.name);
+        return target ? target.friendlyName : "";
+    }
+
+    function detectFocusedOutput(callback): void {
+        Proc.runCommand("niriDS:focusedOutput", ["niri", "msg", "focused-output"], (output, exitCode) => {
+            if (exitCode === 0) {
+                let cleaned = output.replace(/^(Output\s+|Focused\s+output:\s*)/i, "").trim();
+                let parts = cleaned.split(/[\s(]/);
+                let name = parts[0].trim();
+                if (name) {
+                    root.focusedOutputName = name;
+                    console.log("niriDS: Resolved focused output name:", root.focusedOutputName);
+                }
+            }
+            if (callback) callback();
+        });
+    }
+
+    // Launcher for background wl-mirror execution
     Process {
-        id: wlMirrorProc
+        id: mirrorLauncher
+        command: ["sh", "-c", ""]
         running: false
+        stdout: SplitParser {
+            onRead: data => {
+                const trimmed = data.trim();
+                const pid = parseInt(trimmed);
+                if (!isNaN(pid) && pid > 0) {
+                    root.wlMirrorPid = pid;
+                    console.log("niriDS: Started wl-mirror with PID:", pid);
+                    Qt.callLater(() => {
+                        root.setDisplays();
+                    });
+                } else if (trimmed.length > 0) {
+                    console.warn("niriDS: wl-mirror output:", trimmed);
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: mirrorDelayTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            root.startMirrorProcess();
+        }
+    }
+
+    Timer {
+        id: autoRefreshTimer
+        interval: 5000
+        running: true
+        repeat: true
+        onTriggered: {
+            root.setDisplays();
+        }
+    }
+
+    Timer {
+        id: delayedRefreshTimer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            root.setDisplays();
+        }
     }
 
     function stopMirror(): void {
-        if (wlMirrorProc.running) wlMirrorProc.running = false;
+        Quickshell.execDetached(["sh", "-c", "pkill -f wl-mirror 2>/dev/null"]);
+        root.wlMirrorPid = 0;
+        if (mirrorLauncher.running) mirrorLauncher.running = false;
     }
 
     readonly property var internalPrefixes: ["edp", "lvds"]
@@ -46,6 +155,18 @@ Singleton {
     }
 
     function setDisplays() {
+        Proc.runCommand("niriDS:checkMirror", ["pgrep", "-f", "wl-mirror"], (out, code) => {
+            const running = (code === 0 && out.trim().length > 0);
+            if (running) {
+                const pid = parseInt(out.trim().split("\n")[0]);
+                if (!isNaN(pid) && pid > 0) {
+                    root.wlMirrorPid = pid;
+                }
+            } else {
+                root.wlMirrorPid = 0;
+            }
+        });
+
         Proc.runCommand("niriDS:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
             if (exitCode !== 0) return;
             try {
@@ -83,7 +204,9 @@ Singleton {
         stopMirror();
         const action = display.disabled ? "on" : "off";
         Proc.runCommand("niriDS:toggle", ["niri", "msg", "output", display.name, action], (out, code) => {
-            if (code === 0) setDisplays();
+            if (code === 0) {
+                delayedRefreshTimer.start();
+            }
         });
     }
 
@@ -129,7 +252,7 @@ Singleton {
         }
 
         function finish() {
-            Qt.callLater(() => setDisplays());
+            delayedRefreshTimer.start();
         }
 
         if (profile === "internal_only") {
@@ -143,10 +266,15 @@ Singleton {
         } else if (profile === "extend") {
             enableAll(() => finish());
         } else if (profile === "mirror") {
-            enableAll(() => {
-                mirrorDisplay();
+            if (root.mirrorRunning) {
+                stopMirror();
                 finish();
-            });
+            } else {
+                enableAll(() => {
+                    mirrorDisplay();
+                    finish();
+                });
+            }
         } else {
             finish();
         }
@@ -181,14 +309,38 @@ Singleton {
     }
 
     function mirrorDisplay(): void {
-        // Find internal + any external (regardless of disabled state).
-        // Callers (apply("mirror") and the button) must enable outputs first.
-        const internal = displays.find(d => isInternal(d));
-        const external = displays.find(d => !isInternal(d));
-        if (!internal || !external) return;
-        wlMirrorProc.command = ["wl-mirror", "--fullscreen-output", external.name, internal.name];
-        wlMirrorProc.running = true;
+        stopMirror();
+        detectFocusedOutput(() => {
+            mirrorDelayTimer.start();
+        });
     }
 
-    Component.onCompleted: Qt.callLater(() => setDisplays())
+    function startMirrorProcess(): void {
+        if (displays.length < 2) return;
+        
+        let source = displays.find(d => d.name === root.focusedOutputName);
+        let target = displays.find(d => d.name !== root.focusedOutputName);
+        
+        if (!source) {
+            source = displays.find(d => isInternal(d)) || displays[0];
+            target = displays.find(d => d.name !== source.name) || displays[1];
+        }
+        
+        if (!source || !target) {
+            console.warn("niriDS: Cannot mirror, source or target display is missing. Displays:", JSON.stringify(displays));
+            return;
+        }
+        
+        console.log("niriDS: Launching wl-mirror from source:", source.name, "to target:", target.name);
+        
+        // Launch wl-mirror in background detaching via sh, redirecting stderr to stdout for debugging, and capture its PID
+        const cmd = "wl-mirror --fullscreen-output \"" + target.name + "\" \"" + source.name + "\" 2>&1 & echo $!";
+        mirrorLauncher.command = ["sh", "-c", cmd];
+        mirrorLauncher.running = true;
+    }
+
+    Component.onCompleted: Qt.callLater(() => {
+        setDisplays();
+        detectFocusedOutput();
+    })
 }
