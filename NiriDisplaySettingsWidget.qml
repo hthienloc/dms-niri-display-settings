@@ -8,6 +8,7 @@ import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
 import qs.Services
+import qs.Modules.Settings.DisplayConfig
 
 PluginComponent {
     id: root
@@ -145,6 +146,27 @@ PluginComponent {
         if (val !== undefined) return val === true || val === "true";
         const raw = SettingsData.getPluginSetting("niriDS", "disableInternalOption", false);
         return raw === true || raw === "true";
+    }
+
+    readonly property bool showDisplayProfiles: {
+        const val = root.pluginData ? root.pluginData.showDisplayProfiles : undefined;
+        if (val !== undefined) return val === true || val === "true";
+        const raw = SettingsData.getPluginSetting("niriDS", "showDisplayProfiles", false);
+        return raw === true || raw === "true";
+    }
+
+    readonly property var displayProfilesList: {
+        const profiles = DisplayConfigState.validatedProfiles || {};
+        const list = [];
+        const keys = Object.keys(profiles);
+        for (const id of keys) {
+            const p = profiles[id];
+            if (p && typeof p === "object" && p.name && p.id) {
+                list.push(p);
+            }
+        }
+        list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        return list;
     }
 
     readonly property var filteredDisplays: {
@@ -552,6 +574,81 @@ PluginComponent {
                                     onTriggered: manualItem.isLoading = false
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            // Section 3: Saved Display Profiles
+            StyledRect {
+                id: dmsProfilesSection
+                width: parent.width - (mainCol.inCC ? 32 : 0)
+                anchors.horizontalCenter: parent.horizontalCenter
+                height: dmsProfilesCol.implicitHeight + Theme.spacingM * 2
+                visible: root.showDisplayProfiles
+                radius: Theme.cornerRadius
+                color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                border.width: 1
+                border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+
+                Column {
+                    id: dmsProfilesCol
+                    anchors.fill: parent; anchors.margins: Theme.spacingM
+                    spacing: Theme.spacingS
+
+                    RowLayout {
+                        anchors.left: parent.left; anchors.right: parent.right; anchors.leftMargin: 4; anchors.rightMargin: 4
+                        spacing: Theme.spacingXS; width: parent.width
+                        DankIcon { name: "display_settings"; size: 14; color: Theme.surfaceText }
+                        StyledText { text: I18n.tr("Display Profiles"); font.pixelSize: Theme.fontSizeSmall; font.weight: Font.Bold; color: Theme.surfaceText; Layout.fillWidth: true }
+                    }
+
+                    Column {
+                        id: dmsProfilesLayout; width: parent.width; spacing: 4
+
+                        ShortcutCard {
+                            width: parent.width
+                            iconName: "brightness_auto"
+                            label: I18n.tr("Auto Select")
+                            shortcut: ""
+                            isActive: SettingsData.displayProfileAutoSelect
+                            isFirst: true
+                            isLast: root.displayProfilesList.length === 0
+                            onClicked: {
+                                SettingsData.displayProfileAutoSelect = true;
+                                SettingsData.saveSettings();
+                                if (DisplayConfigState.matchedProfile) {
+                                    DisplayConfigState.activateProfile(DisplayConfigState.matchedProfile);
+                                }
+                            }
+                        }
+
+                        Repeater {
+                            model: root.displayProfilesList
+                            delegate: ShortcutCard {
+                                width: parent.width
+                                iconName: "display_settings"
+                                label: modelData.name
+                                shortcut: ""
+                                isActive: !SettingsData.displayProfileAutoSelect && (SettingsData.getActiveDisplayProfile("niri") === modelData.id || DisplayConfigState.matchedProfile === modelData.id)
+                                isFirst: false
+                                isLast: index === root.displayProfilesList.length - 1
+                                onClicked: {
+                                    SettingsData.displayProfileAutoSelect = false;
+                                    SettingsData.saveSettings();
+                                    DisplayConfigState.activateProfile(modelData.id);
+                                }
+                            }
+                        }
+
+                        StyledText {
+                            text: I18n.tr("No profiles configured")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            font.italic: true
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            visible: root.displayProfilesList.length === 0
                         }
                     }
                 }

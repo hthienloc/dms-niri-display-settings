@@ -45,6 +45,13 @@ PluginSettings {
             defaultValue: false
         }
 
+        ToggleSetting {
+            settingKey: "showDisplayProfiles"
+            label: I18n.tr("Show display profiles")
+            description: I18n.tr("Show saved display configuration profiles under the manual controls section")
+            defaultValue: false
+        }
+
         StringSetting {
             settingKey: "fallbackDisplay"
             label: I18n.tr("Preferred internal display")

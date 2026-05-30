@@ -7,6 +7,7 @@ import qs.Common
 import qs.Modals.Common
 import qs.Services
 import qs.Widgets
+import qs.Modules.Settings.DisplayConfig
 
 DankModal {
     id: root
@@ -47,6 +48,25 @@ DankModal {
         if (val !== undefined) return val === true || val === "true";
         const raw = SettingsData.getPluginSetting("niriDS", "disableInternalOption", false);
         return raw === true || raw === "true";
+    }
+    readonly property bool showDisplayProfiles: {
+        const val = pluginData ? pluginData.showDisplayProfiles : undefined;
+        if (val !== undefined) return val === true || val === "true";
+        const raw = SettingsData.getPluginSetting("niriDS", "showDisplayProfiles", false);
+        return raw === true || raw === "true";
+    }
+    readonly property var displayProfilesList: {
+        const profiles = DisplayConfigState.validatedProfiles || {};
+        const list = [];
+        const keys = Object.keys(profiles);
+        for (const id of keys) {
+            const p = profiles[id];
+            if (p && typeof p === "object" && p.name && p.id) {
+                list.push(p);
+            }
+        }
+        list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        return list;
     }
     readonly property var filteredDisplays: {
         const list = NiriDS.displays || [];
@@ -111,8 +131,13 @@ DankModal {
             onBlrChanged: requestPaint()
             onBrrChanged: requestPaint()
 
-            property color paintColor: isCardDisabled ? Theme.withAlpha(Theme.secondary, 0.02) : (isActive ? Theme.withAlpha(Theme.primary, 0.18) : (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04)))
-            property color paintBorder: isCardDisabled ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.05) : (isActive ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
+            property color targetColor: isCardDisabled ? Theme.withAlpha(Theme.secondary, 0.02) : (isActive ? (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.24) : Theme.withAlpha(Theme.primary, 0.18)) : (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04)))
+            property color paintColor: targetColor
+            Behavior on paintColor { ColorAnimation { duration: 250 } }
+            
+            property color targetBorder: isCardDisabled ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.05) : (isActive ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
+            property color paintBorder: targetBorder
+            Behavior on paintBorder { ColorAnimation { duration: 250 } }
 
             onPaintColorChanged: requestPaint()
             onPaintBorderChanged: requestPaint()
@@ -203,7 +228,7 @@ DankModal {
                 size: 32
                 color: projCard.isActive ? Theme.primary : Theme.surfaceText
                 anchors.horizontalCenter: parent.horizontalCenter
-                scale: projCard.isActive ? 1.05 : (projCard.hovered ? 1.15 : 1.0)
+                scale: projCard.isActive ? (projCard.hovered ? 1.15 : 1.05) : (projCard.hovered ? 1.15 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                 Behavior on color { ColorAnimation { duration: 250 } }
             }
@@ -272,6 +297,173 @@ DankModal {
             cursorShape: projCard.isCardDisabled ? Qt.ArrowCursor : Qt.PointingHandCursor
             onPressed: (mouse) => { if (!projCard.isCardDisabled) projRipple.trigger(mouse.x, mouse.y); }
             onClicked: if (!projCard.isCardDisabled) projCard.clicked()
+        }
+    }
+
+    component ProfileCard: Item {
+        id: profCard
+        property int cardIndex: 0
+        property string label
+        property string iconName: "display_settings"
+        property bool isActive: false
+        signal clicked()
+
+        property int totalCount: root.displayProfilesList ? root.displayProfilesList.length + 1 : 1
+        property real innerRadius: 6
+        property real outerRadius: Theme.cornerRadius * 1.5
+
+        property bool isOddLayout: totalCount % 2 === 1 && totalCount > 1
+        property bool isSpan2: isOddLayout && cardIndex === 0
+
+        width: isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2
+        height: 54
+        
+        property bool hovered: profMouse.containsMouse
+
+        property int row: {
+            if (totalCount === 1) return 0;
+            if (isOddLayout) {
+                return cardIndex === 0 ? 0 : Math.floor((cardIndex - 1) / 2) + 1;
+            } else {
+                return Math.floor(cardIndex / 2);
+            }
+        }
+        property int col: {
+            if (totalCount === 1) return 0;
+            if (isSpan2) return 0;
+            if (isOddLayout) {
+                return cardIndex === 0 ? 0 : (cardIndex - 1) % 2;
+            } else {
+                return cardIndex % 2;
+            }
+        }
+        property int totalRows: {
+            if (totalCount === 1) return 1;
+            if (isOddLayout) {
+                return Math.floor((totalCount - 1) / 2) + 1;
+            } else {
+                return Math.ceil(totalCount / 2);
+            }
+        }
+
+        property bool isFirstRow: row === 0
+        property bool isLastRow: row === totalRows - 1
+        property bool isLeftCol: col === 0
+        property bool isRightCol: col === 1 || isSpan2
+
+        // Active card gets all same rounded corners (outerRadius)
+        property real tlr: isActive ? outerRadius : ((isFirstRow && isLeftCol) ? outerRadius : innerRadius)
+        property real trr: isActive ? outerRadius : ((isFirstRow && isRightCol) ? outerRadius : innerRadius)
+        property real blr: isActive ? outerRadius : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
+        property real brr: isActive ? outerRadius : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
+
+        Canvas {
+            id: profBg
+            anchors.fill: parent
+            antialiasing: true
+
+            property real tlr: profCard.tlr
+            Behavior on tlr { NumberAnimation { duration: 250 } }
+            property real trr: profCard.trr
+            Behavior on trr { NumberAnimation { duration: 250 } }
+            property real blr: profCard.blr
+            Behavior on blr { NumberAnimation { duration: 250 } }
+            property real brr: profCard.brr
+            Behavior on brr { NumberAnimation { duration: 250 } }
+
+            onTlrChanged: requestPaint()
+            onTrrChanged: requestPaint()
+            onBlrChanged: requestPaint()
+            onBrrChanged: requestPaint()
+
+            property bool isCardActive: profCard.isActive
+            onIsCardActiveChanged: requestPaint()
+
+            property color targetColor: isCardActive ? (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.24) : Theme.withAlpha(Theme.primary, 0.18)) : (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04))
+            property color paintColor: targetColor
+            Behavior on paintColor { ColorAnimation { duration: 250 } }
+
+            property color targetBorder: isCardActive ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+            property color paintBorder: targetBorder
+            Behavior on paintBorder { ColorAnimation { duration: 250 } }
+
+            onPaintColorChanged: requestPaint()
+            onPaintBorderChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+
+            onPaint: {
+                var ctx = getContext("2d");
+                var x = 1, y = 1;
+                var w = width - 2, h = height - 2;
+
+                ctx.reset();
+                ctx.beginPath();
+                ctx.moveTo(x + tlr, y);
+                ctx.lineTo(x + w - trr, y);
+                ctx.arcTo(x + w, y, x + w, y + trr, trr);
+                ctx.lineTo(x + w, y + h - brr);
+                ctx.arcTo(x + w, y + h, x + w - brr, y + h, brr);
+                ctx.lineTo(x + blr, y + h);
+                ctx.arcTo(x, y + h, x, y + h - blr, blr);
+                ctx.lineTo(x, y + tlr);
+                ctx.arcTo(x, y, x + tlr, y, tlr);
+                ctx.closePath();
+
+                ctx.fillStyle = paintColor.toString();
+                ctx.fill();
+                ctx.strokeStyle = paintBorder.toString();
+                ctx.lineWidth = isCardActive ? 2 : 1;
+                ctx.stroke();
+            }
+        }
+
+        DankRipple { id: profRipple; anchors.fill: parent; cornerRadius: profCard.tlr; rippleColor: Theme.primary }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Theme.spacingM
+            anchors.rightMargin: Theme.spacingM
+            spacing: Theme.spacingS
+
+            DankIcon {
+                name: profCard.iconName
+                size: 18
+                color: profCard.isActive ? Theme.primary : Theme.surfaceText
+                Layout.alignment: Qt.AlignVCenter
+                Behavior on color { ColorAnimation { duration: 250 } }
+            }
+
+            StyledText {
+                text: profCard.label
+                font.pixelSize: Theme.fontSizeSmall
+                font.weight: profCard.isActive ? Font.Bold : Font.Normal
+                color: profCard.isActive ? Theme.primary : Theme.surfaceText
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                elide: Text.ElideRight
+                Behavior on color { ColorAnimation { duration: 250 } }
+            }
+
+            DankIcon { 
+                name: "check_circle"
+                size: 16
+                color: Theme.primary
+                Layout.alignment: Qt.AlignVCenter
+                opacity: profCard.isActive ? 1.0 : 0.0
+                scale: profCard.isActive ? 1.0 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 250 } }
+                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+            }
+        }
+
+        MouseArea {
+            id: profMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: profCard.clicked()
+            onPressed: (m) => profRipple.trigger(m.x, m.y)
         }
     }
 
@@ -975,6 +1167,79 @@ DankModal {
                                                     displayData: modelData
                                                 }
                                             }
+                                        }
+                                    }
+                                }
+
+                                // Display Profiles Section (Below Manual Control)
+                                StyledRect {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: dmsProfilesCol.implicitHeight + Theme.spacingM * 2
+                                    visible: root.showDisplayProfiles
+                                    radius: Theme.cornerRadius
+                                    color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                                    border.width: 1
+                                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+
+                                    Column {
+                                        id: dmsProfilesCol
+                                        anchors.top: parent.top
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.margins: Theme.spacingM
+                                        spacing: Theme.spacingS
+
+                                        RowLayout {
+                                            width: parent.width
+                                            spacing: Theme.spacingXS
+                                            DankIcon { name: "display_settings"; size: 14; color: Theme.surfaceText }
+                                            StyledText { text: I18n.tr("Display Profiles"); font.pixelSize: Theme.fontSizeSmall; font.weight: Font.Bold; color: Theme.surfaceText; Layout.fillWidth: true }
+                                        }
+
+                                        Flow {
+                                            id: dmsProfilesFlow
+                                            width: parent.width
+                                            height: childrenRect.height
+                                            spacing: Theme.spacingS
+
+                                            ProfileCard {
+                                                cardIndex: 0
+                                                label: I18n.tr("Auto Select")
+                                                iconName: "brightness_auto"
+                                                isActive: SettingsData.displayProfileAutoSelect
+                                                onClicked: {
+                                                    SettingsData.displayProfileAutoSelect = true;
+                                                    SettingsData.saveSettings();
+                                                    if (DisplayConfigState.matchedProfile) {
+                                                        DisplayConfigState.activateProfile(DisplayConfigState.matchedProfile);
+                                                    }
+                                                }
+                                            }
+
+                                            Repeater {
+                                                model: root.displayProfilesList
+                                                delegate: ProfileCard {
+                                                    cardIndex: index + 1
+                                                    label: modelData.name
+                                                    iconName: "display_settings"
+                                                    isActive: !SettingsData.displayProfileAutoSelect && (SettingsData.getActiveDisplayProfile("niri") === modelData.id || DisplayConfigState.matchedProfile === modelData.id)
+                                                    onClicked: {
+                                                        SettingsData.displayProfileAutoSelect = false;
+                                                        SettingsData.saveSettings();
+                                                        DisplayConfigState.activateProfile(modelData.id);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        StyledText {
+                                            text: I18n.tr("No profiles configured")
+                                            font.pixelSize: Theme.fontSizeSmall
+                                            color: Theme.surfaceVariantText
+                                            font.italic: true
+                                            width: parent.width
+                                            horizontalAlignment: Text.AlignHCenter
+                                            visible: root.displayProfilesList.length === 0
                                         }
                                     }
                                 }
