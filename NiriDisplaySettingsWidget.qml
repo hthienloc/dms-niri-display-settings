@@ -27,6 +27,7 @@ PluginComponent {
                 displayModal.close();
             } else {
                 NiriDS.detectFocusedOutput();
+                NiriDS.setDisplays();
                 displayModal.openCentered();
             }
             return "SUCCESS";
@@ -34,6 +35,7 @@ PluginComponent {
 
         function open(): string {
             NiriDS.detectFocusedOutput();
+            NiriDS.setDisplays();
             displayModal.openCentered();
             return "SUCCESS";
         }
@@ -94,7 +96,7 @@ PluginComponent {
             case "external_only": return "External Only";
             case "extend": return "Extended";
             case "mirror": return "Mirror";
-            default: return NiriDS.displays.length + " displays";
+            default: return (NiriDS.displays ? NiriDS.displays.length : 0) + " displays";
         }
     }
     ccWidgetIsActive: root.activeProfile !== "internal_only" && root.activeProfile !== ""
@@ -375,10 +377,10 @@ PluginComponent {
                                     property real innerRadius: 6
                                     property real outerRadius: 12
                                     property bool isFirst: index === 0
-                                    property bool isLast: index === NiriDS.displays.length - 1
+                                    property bool isLast: NiriDS.displays ? (index === NiriDS.displays.length - 1) : false
                                     
                                     property bool isPrevActive: index > 0 && NiriDS.displays && NiriDS.displays[index - 1] && !NiriDS.displays[index - 1].disabled
-                                    property bool isNextActive: index < NiriDS.displays.length - 1 && NiriDS.displays && NiriDS.displays[index + 1] && !NiriDS.displays[index + 1].disabled
+                                    property bool isNextActive: NiriDS.displays ? (index < NiriDS.displays.length - 1 && NiriDS.displays[index + 1] && !NiriDS.displays[index + 1].disabled) : false
 
                                     property real tlr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
                                     property real trr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
@@ -450,7 +452,7 @@ PluginComponent {
                                     name: (modelData && modelData.name && NiriDS.isInternalName(modelData.name)) ? "computer" : "tv"
                                     size: Theme.iconSize - 4
                                     color: Theme.surfaceText
-                                    filled: !manualItem.isOutputActive
+                                    filled: false
                                     anchors.left: parent.left
                                     anchors.leftMargin: Theme.spacingM
                                     anchors.verticalCenter: parent.verticalCenter

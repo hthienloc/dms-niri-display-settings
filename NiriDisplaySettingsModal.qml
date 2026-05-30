@@ -44,12 +44,14 @@ DankModal {
     onVisibleChanged: {
         if (visible) {
             NiriDS.detectFocusedOutput();
+            NiriDS.setDisplays();
         }
     }
 
     onShouldBeVisibleChanged: {
         if (shouldBeVisible) {
             NiriDS.detectFocusedOutput();
+            NiriDS.setDisplays();
         }
     }
 
@@ -84,6 +86,16 @@ DankModal {
             anchors.fill: parent
             antialiasing: true
 
+            property real tlr: projCard.tlr
+            property real trr: projCard.trr
+            property real blr: projCard.blr
+            property real brr: projCard.brr
+
+            onTlrChanged: requestPaint()
+            onTrrChanged: requestPaint()
+            onBlrChanged: requestPaint()
+            onBrrChanged: requestPaint()
+
             property color paintColor: isCardDisabled ? Theme.withAlpha(Theme.secondary, 0.02) : (isActive ? Theme.withAlpha(Theme.primary, 0.18) : (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04)))
             property color paintBorder: isCardDisabled ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.05) : (isActive ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
 
@@ -99,15 +111,15 @@ DankModal {
 
                 ctx.reset();
                 ctx.beginPath();
-                ctx.moveTo(x + projCard.tlr, y);
-                ctx.lineTo(x + w - projCard.trr, y);
-                ctx.arcTo(x + w, y, x + w, y + projCard.trr, projCard.trr);
-                ctx.lineTo(x + w, y + h - projCard.brr);
-                ctx.arcTo(x + w, y + h, x + w - projCard.brr, y + h, projCard.brr);
-                ctx.lineTo(x + projCard.blr, y + h);
-                ctx.arcTo(x, y + h, x, y + h - projCard.blr, projCard.blr);
-                ctx.lineTo(x, y + projCard.tlr);
-                ctx.arcTo(x, y, x + projCard.tlr, y, projCard.tlr);
+                ctx.moveTo(x + tlr, y);
+                ctx.lineTo(x + w - trr, y);
+                ctx.arcTo(x + w, y, x + w, y + trr, trr);
+                ctx.lineTo(x + w, y + h - brr);
+                ctx.arcTo(x + w, y + h, x + w - brr, y + h, brr);
+                ctx.lineTo(x + blr, y + h);
+                ctx.arcTo(x, y + h, x, y + h - blr, blr);
+                ctx.lineTo(x, y + tlr);
+                ctx.arcTo(x, y, x + tlr, y, tlr);
                 ctx.closePath();
 
                 ctx.fillStyle = paintColor.toString();
@@ -250,7 +262,7 @@ DankModal {
 
     component ManualDisplayCard: Item {
         id: manualCard
-        property int index: 0
+        property int cardIndex: 0
         property var displayData
         property bool isActive: !(displayData && displayData.disabled)
         property bool isOnlyEnabled: {
@@ -265,20 +277,20 @@ DankModal {
         property real outerRadius: Theme.cornerRadius * 1.5
 
         property bool isOddLayout: totalCount % 2 === 1 && totalCount > 1
-        property bool isSpan2: isOddLayout && index === totalCount - 1
+        property bool isSpan2: isOddLayout && cardIndex === totalCount - 1
 
         width: isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2
         height: 140
         opacity: 1.0
 
-        property bool isFirstRow: index < 2
+        property bool isFirstRow: cardIndex < 2
         property bool isLastRow: {
             if (totalCount <= 2) return true;
-            if (totalCount % 2 === 0) return index >= totalCount - 2;
-            return index === totalCount - 1;
+            if (totalCount % 2 === 0) return cardIndex >= totalCount - 2;
+            return cardIndex === totalCount - 1;
         }
-        property bool isLeftCol: index % 2 === 0
-        property bool isRightCol: index % 2 === 1 || index === totalCount - 1
+        property bool isLeftCol: cardIndex % 2 === 0
+        property bool isRightCol: cardIndex % 2 === 1 || cardIndex === totalCount - 1
 
         // Active card gets all same rounded corners (outerRadius)
         property real tlr: isActive ? outerRadius : ((isFirstRow && isLeftCol) ? outerRadius : innerRadius)
@@ -290,6 +302,16 @@ DankModal {
             id: manualBg
             anchors.fill: parent
             antialiasing: true
+
+            property real tlr: manualCard.tlr
+            property real trr: manualCard.trr
+            property real blr: manualCard.blr
+            property real brr: manualCard.brr
+
+            onTlrChanged: requestPaint()
+            onTrrChanged: requestPaint()
+            onBlrChanged: requestPaint()
+            onBrrChanged: requestPaint()
 
             property color paintColor: isActive ? Theme.withAlpha(Theme.primary, 0.18) : (manualCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04))
             property color paintBorder: isActive ? Theme.primary : (manualCard.hovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
@@ -306,15 +328,15 @@ DankModal {
 
                 ctx.reset();
                 ctx.beginPath();
-                ctx.moveTo(x + manualCard.tlr, y);
-                ctx.lineTo(x + w - manualCard.trr, y);
-                ctx.arcTo(x + w, y, x + w, y + manualCard.trr, manualCard.trr);
-                ctx.lineTo(x + w, y + h - manualCard.brr);
-                ctx.arcTo(x + w, y + h, x + w - manualCard.brr, y + h, manualCard.brr);
-                ctx.lineTo(x + manualCard.blr, y + h);
-                ctx.arcTo(x, y + h, x, y + h - manualCard.blr, manualCard.blr);
-                ctx.lineTo(x, y + manualCard.tlr);
-                ctx.arcTo(x, y, x + manualCard.tlr, y, manualCard.tlr);
+                ctx.moveTo(x + tlr, y);
+                ctx.lineTo(x + w - trr, y);
+                ctx.arcTo(x + w, y, x + w, y + trr, trr);
+                ctx.lineTo(x + w, y + h - brr);
+                ctx.arcTo(x + w, y + h, x + w - brr, y + h, brr);
+                ctx.lineTo(x + blr, y + h);
+                ctx.arcTo(x, y + h, x, y + h - blr, blr);
+                ctx.lineTo(x, y + tlr);
+                ctx.arcTo(x, y, x + tlr, y, tlr);
                 ctx.closePath();
 
                 ctx.fillStyle = paintColor.toString();
@@ -333,9 +355,9 @@ DankModal {
             height: 20
             width: 72
             radius: 10
-            color: manualCard.isActive ? Theme.withAlpha(Theme.success, 0.15) : Theme.withAlpha(Theme.error, 0.15)
+            color: manualCard.isActive ? Theme.withAlpha(Theme.success, 0.15) : Theme.error
             border.width: 1
-            border.color: manualCard.isActive ? Theme.withAlpha(Theme.success, 0.3) : Theme.withAlpha(Theme.error, 0.3)
+            border.color: manualCard.isActive ? Theme.withAlpha(Theme.success, 0.3) : Theme.error
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Theme.spacingS
             anchors.horizontalCenter: parent.horizontalCenter
@@ -346,14 +368,14 @@ DankModal {
                 
                 Rectangle {
                     width: 6; height: 6; radius: 3
-                    color: manualCard.isActive ? Theme.success : Theme.error
+                    color: manualCard.isActive ? Theme.success : "#ffffff"
                 }
                 
                 StyledText {
                     text: manualCard.isActive ? I18n.tr("Active") : I18n.tr("Disabled")
                     font.pixelSize: Theme.fontSizeSmall - 2
                     font.weight: Font.Bold
-                    color: manualCard.isActive ? Theme.success : Theme.error
+                    color: manualCard.isActive ? Theme.success : "#ffffff"
                 }
             }
         }
@@ -372,7 +394,7 @@ DankModal {
                 name: (manualCard.displayData && manualCard.displayData.name && NiriDS.isInternalName(manualCard.displayData.name)) ? "computer" : "tv"
                 size: 32
                 color: manualCard.isActive ? Theme.primary : Theme.surfaceVariantText
-                filled: !manualCard.isActive
+                filled: false
                 anchors.horizontalCenter: parent.horizontalCenter
                 scale: manualCard.isActive ? 1.05 : (manualCard.hovered ? 1.15 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
@@ -929,7 +951,7 @@ DankModal {
                                             Repeater {
                                                 model: NiriDS.displays
                                                 delegate: ManualDisplayCard {
-                                                    index: index
+                                                    cardIndex: index
                                                     displayData: modelData
                                                 }
                                             }

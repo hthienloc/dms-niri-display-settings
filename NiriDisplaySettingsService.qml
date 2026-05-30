@@ -17,6 +17,10 @@ Singleton {
     readonly property bool mirrorRunning: wlMirrorPid > 0
 
     readonly property string activeProfile: {
+        // Explicitly list dependencies to ensure full reactivity in QML
+        let _dep1 = root.displays;
+        let _dep2 = root.mirrorRunning;
+
         const list = root.displays || [];
         if (list.length === 0) return "";
         const internal = list.filter(d => root.isInternal(d));
@@ -85,6 +89,9 @@ Singleton {
                 if (!isNaN(pid) && pid > 0) {
                     root.wlMirrorPid = pid;
                     console.log("niriDS: Started wl-mirror with PID:", pid);
+                    Qt.callLater(() => {
+                        root.setDisplays();
+                    });
                 } else if (trimmed.length > 0) {
                     console.warn("niriDS: wl-mirror output:", trimmed);
                 }
@@ -98,6 +105,25 @@ Singleton {
         repeat: false
         onTriggered: {
             root.startMirrorProcess();
+        }
+    }
+
+    Timer {
+        id: autoRefreshTimer
+        interval: 5000
+        running: true
+        repeat: true
+        onTriggered: {
+            root.setDisplays();
+        }
+    }
+
+    Timer {
+        id: delayedRefreshTimer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            root.setDisplays();
         }
     }
 
@@ -131,7 +157,12 @@ Singleton {
     function setDisplays() {
         Proc.runCommand("niriDS:checkMirror", ["pgrep", "-f", "wl-mirror"], (out, code) => {
             const running = (code === 0 && out.trim().length > 0);
-            if (!running && root.wlMirrorPid > 0) {
+            if (running) {
+                const pid = parseInt(out.trim().split("\n")[0]);
+                if (!isNaN(pid) && pid > 0) {
+                    root.wlMirrorPid = pid;
+                }
+            } else {
                 root.wlMirrorPid = 0;
             }
         });
@@ -173,7 +204,9 @@ Singleton {
         stopMirror();
         const action = display.disabled ? "on" : "off";
         Proc.runCommand("niriDS:toggle", ["niri", "msg", "output", display.name, action], (out, code) => {
-            if (code === 0) setDisplays();
+            if (code === 0) {
+                delayedRefreshTimer.start();
+            }
         });
     }
 
@@ -219,7 +252,7 @@ Singleton {
         }
 
         function finish() {
-            Qt.callLater(() => setDisplays());
+            delayedRefreshTimer.start();
         }
 
         if (profile === "internal_only") {
@@ -233,10 +266,15 @@ Singleton {
         } else if (profile === "extend") {
             enableAll(() => finish());
         } else if (profile === "mirror") {
-            enableAll(() => {
-                mirrorDisplay();
+            if (root.mirrorRunning) {
+                stopMirror();
                 finish();
-            });
+            } else {
+                enableAll(() => {
+                    mirrorDisplay();
+                    finish();
+                });
+            }
         } else {
             finish();
         }
