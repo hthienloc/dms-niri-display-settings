@@ -38,6 +38,13 @@ PluginSettings {
             defaultValue: true
         }
 
+        ToggleSetting {
+            settingKey: "disableInternalOption"
+            label: I18n.tr("Disable internal display option")
+            description: I18n.tr("Remove the internal display option and the 'Internal Only' profile selection from both UIs")
+            defaultValue: false
+        }
+
         StringSetting {
             settingKey: "fallbackDisplay"
             label: I18n.tr("Preferred internal display")

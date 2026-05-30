@@ -17,6 +17,7 @@ PluginComponent {
 
     NiriDisplaySettingsModal {
         id: displayModal
+        pluginData: root.pluginData
     }
 
     IpcHandler {
@@ -47,6 +48,9 @@ PluginComponent {
 
         function apply(profile: string): string {
             if (profile === "internal_only" || profile === "external_only" || profile === "extend" || profile === "mirror") {
+                if (profile === "internal_only" && root.disableInternalOption) {
+                    return "ERROR: Internal Only option is disabled";
+                }
                 NiriDS.apply(profile);
                 return "SUCCESS";
             }
@@ -91,12 +95,15 @@ PluginComponent {
     ccWidgetIcon: "computer"
     ccWidgetPrimaryText: "Display Settings"
     ccWidgetSecondaryText: {
+        if (root.disableInternalOption && root.activeProfile === "internal_only") {
+            return I18n.tr("Laptop Screen");
+        }
         switch (root.activeProfile) {
-            case "internal_only": return "Internal Only";
-            case "external_only": return "External Only";
-            case "extend": return "Extended";
-            case "mirror": return "Mirror";
-            default: return (NiriDS.displays ? NiriDS.displays.length : 0) + " displays";
+            case "internal_only": return I18n.tr("Internal Only");
+            case "external_only": return I18n.tr("External Only");
+            case "extend": return I18n.tr("Extended");
+            case "mirror": return I18n.tr("Mirror");
+            default: return (root.filteredDisplays ? root.filteredDisplays.length : 0) + " displays";
         }
     }
     ccWidgetIsActive: root.activeProfile !== "internal_only" && root.activeProfile !== ""
@@ -133,6 +140,21 @@ PluginComponent {
         }
     }
 
+    readonly property bool disableInternalOption: {
+        const val = root.pluginData ? root.pluginData.disableInternalOption : undefined;
+        if (val !== undefined) return val === true || val === "true";
+        const raw = SettingsData.getPluginSetting("niriDS", "disableInternalOption", false);
+        return raw === true || raw === "true";
+    }
+
+    readonly property var filteredDisplays: {
+        const list = NiriDS.displays || [];
+        if (disableInternalOption) {
+            return list.filter(d => !NiriDS.isInternal(d));
+        }
+        return list;
+    }
+
     readonly property bool hasExternal: {
         const raw = NiriDS.rawOutputs || {};
         return Object.keys(raw).some(n => n && !NiriDS.isInternalName(n));
@@ -140,7 +162,7 @@ PluginComponent {
 
     readonly property string activeProfile: NiriDS.activeProfile
 
-    readonly property int optionCount: NiriDS.displays ? NiriDS.displays.length : 0
+    readonly property int optionCount: root.filteredDisplays ? root.filteredDisplays.length : 0
 
     Component {
         id: niriWidgetContent
@@ -313,6 +335,7 @@ PluginComponent {
                             shortcut: "3"
                             disabled: !root.hasExternal
                             isActive: root.activeProfile === "mirror"
+                            isLast: root.disableInternalOption
                             onClicked: { NiriDS.apply("mirror"); }
                         }
                         ShortcutCard {
@@ -322,6 +345,8 @@ PluginComponent {
                             shortcut: "4"
                             isActive: root.activeProfile === "internal_only"
                             isLast: true
+                            visible: !root.disableInternalOption
+                            height: visible ? 44 : 0
                             onClicked: { NiriDS.apply("internal_only"); }
                         }
                     }
@@ -357,7 +382,7 @@ PluginComponent {
                         id: manualLayout; width: parent.width; spacing: 4
 
                         Repeater {
-                            model: NiriDS.displays
+                            model: root.filteredDisplays
                             delegate: Item {
                                 id: manualItem
                                 width: parent.width
@@ -365,7 +390,7 @@ PluginComponent {
                                 opacity: isOnlyEnabled && !modelData?.disabled ? 0.5 : (manualItem.isOutputActive ? 1.0 : 0.5)
 
                                 property bool isOnlyEnabled: {
-                                    const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
+                                    const enabledCount = (root.filteredDisplays || []).filter(d => !d.disabled).length;
                                     return enabledCount === 1 && !(modelData?.disabled);
                                 }
                                 property bool isOutputActive: !(modelData && modelData.disabled)
@@ -377,10 +402,10 @@ PluginComponent {
                                     property real innerRadius: 6
                                     property real outerRadius: 12
                                     property bool isFirst: index === 0
-                                    property bool isLast: NiriDS.displays ? (index === NiriDS.displays.length - 1) : false
+                                    property bool isLast: root.filteredDisplays ? (index === root.filteredDisplays.length - 1) : false
                                     
-                                    property bool isPrevActive: index > 0 && NiriDS.displays && NiriDS.displays[index - 1] && !NiriDS.displays[index - 1].disabled
-                                    property bool isNextActive: NiriDS.displays ? (index < NiriDS.displays.length - 1 && NiriDS.displays[index + 1] && !NiriDS.displays[index + 1].disabled) : false
+                                    property bool isPrevActive: index > 0 && root.filteredDisplays && root.filteredDisplays[index - 1] && !root.filteredDisplays[index - 1].disabled
+                                    property bool isNextActive: root.filteredDisplays ? (index < root.filteredDisplays.length - 1 && root.filteredDisplays[index + 1] && !root.filteredDisplays[index + 1].disabled) : false
 
                                     property real tlr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
                                     property real trr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)

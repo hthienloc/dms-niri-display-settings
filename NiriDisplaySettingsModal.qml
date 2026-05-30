@@ -41,6 +41,21 @@ DankModal {
 
     readonly property string activeProfile: NiriDS.activeProfile
 
+    property var pluginData: ({})
+    readonly property bool disableInternalOption: {
+        const val = pluginData ? pluginData.disableInternalOption : undefined;
+        if (val !== undefined) return val === true || val === "true";
+        const raw = SettingsData.getPluginSetting("niriDS", "disableInternalOption", false);
+        return raw === true || raw === "true";
+    }
+    readonly property var filteredDisplays: {
+        const list = NiriDS.displays || [];
+        if (disableInternalOption) {
+            return list.filter(d => !NiriDS.isInternal(d));
+        }
+        return list;
+    }
+
     onVisibleChanged: {
         if (visible) {
             NiriDS.detectFocusedOutput();
@@ -77,7 +92,7 @@ DankModal {
         property real tlr: isActive ? outerRadius : (index === 0 ? outerRadius : innerRadius)
         property real trr: isActive ? outerRadius : (index === 1 ? outerRadius : innerRadius)
         property real blr: isActive ? outerRadius : (index === 2 ? outerRadius : innerRadius)
-        property real brr: isActive ? outerRadius : (index === 3 ? outerRadius : innerRadius)
+        property real brr: isActive ? outerRadius : ((index === 3 || (index === 2 && root.disableInternalOption)) ? outerRadius : innerRadius)
 
         property bool hovered: projMouse.containsMouse
 
@@ -266,13 +281,13 @@ DankModal {
         property var displayData
         property bool isActive: !(displayData && displayData.disabled)
         property bool isOnlyEnabled: {
-            const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
+            const enabledCount = (root.filteredDisplays || []).filter(d => !d.disabled).length;
             return enabledCount === 1 && !displayData?.disabled;
         }
         property bool isLoading: false
         property bool hovered: cardHover.containsMouse
 
-        property int totalCount: NiriDS.displays ? NiriDS.displays.length : 0
+        property int totalCount: root.filteredDisplays ? root.filteredDisplays.length : 0
         property real innerRadius: 6
         property real outerRadius: Theme.cornerRadius * 1.5
 
@@ -575,7 +590,7 @@ DankModal {
     property int rateIndex: 0
     property real brightnessValue: 0.8
     property int selectedIndex: 0
-    property int optionCount: NiriDS.displays ? NiriDS.displays.length : 0
+    property int optionCount: root.filteredDisplays ? root.filteredDisplays.length : 0
     property rect parentBounds: Qt.rect(0, 0, 0, 0)
     property bool hasExternal: {
         const raw = NiriDS.rawOutputs || {};
@@ -607,7 +622,7 @@ DankModal {
 
     onBackgroundClicked: () => close()
     onOpened: () => {
-        const displays = NiriDS?.displays || [];
+        const displays = root.filteredDisplays || [];
         const enabledCount = displays.filter(d => !d.disabled).length;
         
         let firstSelectable = 0;
@@ -626,7 +641,7 @@ DankModal {
 
     modalFocusScope.Keys.onPressed: event => {
         function getNextEnabledIndex(current, direction) {
-            const displays = NiriDS?.displays || [];
+            const displays = root.filteredDisplays || [];
             let count = 0;
             let index = current;
             
@@ -654,8 +669,8 @@ DankModal {
             case Qt.Key_Return:
             case Qt.Key_Enter:
                 if (optionCount > 0) {
-                    const item = NiriDS?.displays?.[selectedIndex];
-                    const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
+                    const item = root.filteredDisplays?.[selectedIndex];
+                    const enabledCount = (root.filteredDisplays || []).filter(d => !d.disabled).length;
                     const isLast = enabledCount === 1 && !item?.disabled;
                     if (!isLast) NiriDS.toggleDisable(item);
                 }
@@ -672,7 +687,10 @@ DankModal {
             case Qt.Key_3:
                 if (hasExternal) { NiriDS.apply("mirror"); root.close(); }
                 event.accepted = true; break;
-            case Qt.Key_4: NiriDS.apply("internal_only"); root.close(); event.accepted = true; break;
+            case Qt.Key_4: 
+                if (!root.disableInternalOption) { NiriDS.apply("internal_only"); root.close(); }
+                event.accepted = true; 
+                break;
         }
     }
 
@@ -895,6 +913,7 @@ DankModal {
                                                 badgeText: "3"
                                                 isActive: root.activeProfile === "mirror"
                                                 isCardDisabled: !root.hasExternal
+                                                width: root.disableInternalOption ? parent.width : (parent.width - Theme.spacingS) / 2
                                                 onClicked: NiriDS.apply("mirror")
                                             }
 
@@ -905,6 +924,7 @@ DankModal {
                                                 iconName: "laptop"
                                                 badgeText: "4"
                                                 isActive: root.activeProfile === "internal_only"
+                                                visible: !root.disableInternalOption
                                                 onClicked: NiriDS.apply("internal_only")
                                             }
                                         }
@@ -949,7 +969,7 @@ DankModal {
                                             spacing: Theme.spacingS
 
                                             Repeater {
-                                                model: NiriDS.displays
+                                                model: root.filteredDisplays
                                                 delegate: ManualDisplayCard {
                                                     cardIndex: index
                                                     displayData: modelData
