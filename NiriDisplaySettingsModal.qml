@@ -1562,7 +1562,7 @@ DankModal {
                                                 }
                                             }
 
-                                            DankDropdown {
+                                            NiriDankDropdown {
                                                 id: resDropdown
                                                 Layout.fillWidth: true
                                                 dropdownWidth: parent.width
@@ -1611,7 +1611,7 @@ DankModal {
                                                         font.pixelSize: Theme.fontSizeSmall
                                                         color: Theme.surfaceVariantText
                                                     }
-                                                    DankDropdown {
+                                                    NiriDankDropdown {
                                                         id: scaleDrop
                                                         Layout.fillWidth: true
                                                         dropdownWidth: parent.width
@@ -1637,7 +1637,7 @@ DankModal {
                                                         font.pixelSize: Theme.fontSizeSmall
                                                         color: Theme.surfaceVariantText
                                                     }
-                                                    DankDropdown {
+                                                    NiriDankDropdown {
                                                         id: transformDrop
                                                         Layout.fillWidth: true
                                                         dropdownWidth: parent.width
@@ -1682,7 +1682,7 @@ DankModal {
                                                 }
                                             }
 
-                                            DankDropdown {
+                                            NiriDankDropdown {
                                                 id: vrrDrop
                                                 Layout.fillWidth: true
                                                 dropdownWidth: parent.width
