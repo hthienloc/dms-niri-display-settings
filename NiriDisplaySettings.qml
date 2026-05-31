@@ -90,8 +90,23 @@ PluginSettings {
             }
 
             CopyBox {
-                label: I18n.tr("Apply Profile")
+                label: I18n.tr("Apply: Internal Only")
                 text: "dms ipc call niriDS apply internal_only"
+            }
+
+            CopyBox {
+                label: I18n.tr("Apply: External Only")
+                text: "dms ipc call niriDS apply external_only"
+            }
+
+            CopyBox {
+                label: I18n.tr("Apply: Extend Displays")
+                text: "dms ipc call niriDS apply extend"
+            }
+
+            CopyBox {
+                label: I18n.tr("Apply: Mirror Displays")
+                text: "dms ipc call niriDS apply mirror"
             }
 
             Separator { opacity: 0.1 }
