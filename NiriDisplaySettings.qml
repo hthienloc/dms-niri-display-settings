@@ -9,9 +9,20 @@ PluginSettings {
     pluginId: "niriDS"
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Automatic Behaviors"); icon: "auto_awesome" }
+        id: autoBehaviorsSection
+        SectionTitle { 
+            text: I18n.tr("Automatic Behaviors")
+            icon: "auto_awesome" 
+            showReset: connectionAction.isDirty || enableFallback.isDirty || fallbackDisplay.isDirty
+            onResetClicked: {
+                connectionAction.resetToDefault();
+                enableFallback.resetToDefault();
+                fallbackDisplay.resetToDefault();
+            }
+        }
 
-        SelectionSetting {
+        SelectionSettingPlus {
+            id: connectionAction
             settingKey: "connectionAction"
             label: I18n.tr("When monitor is connected")
             description: I18n.tr("Choose what happens automatically when an external monitor is plugged in")
@@ -26,63 +37,87 @@ PluginSettings {
             defaultValue: "show_menu"
         }
 
-        ToggleSetting {
+        Separator {}
+
+        ToggleSettingPlus {
+            id: enableFallback
             settingKey: "enableFallback"
             label: I18n.tr("Enable safety fallback")
             description: I18n.tr("Automatically re-enable the laptop screen if all external monitors are disconnected")
             defaultValue: true
         }
 
-        StringSetting {
+        Separator {}
+
+        StringSettingPlus {
+            id: fallbackDisplay
             settingKey: "fallbackDisplay"
             label: I18n.tr("Preferred internal display")
             description: I18n.tr("The name of your laptop display (e.g. eDP-1). Leave empty for auto-detection.")
             placeholder: "eDP-1"
+            defaultValue: ""
         }
     }
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Commands & Shortcuts"); icon: "keyboard" }
-
-        InfoText {
-            text: I18n.tr("You can open, close, or toggle the Niri Display Settings modal using the dms CLI:")
+        SectionTitle {
+            id: ipcTitle
+            text: I18n.tr("IPC Commands")
+            icon: "terminal"
+            collapsible: true
+            isExpanded: false
+            settingKey: "ipcCommandsExpanded"
         }
 
-        CopyBox {
-            label: I18n.tr("Toggle Modal Command")
-            text: "dms ipc call niriDS toggle"
+        Column {
+            width: parent.width
+            spacing: Theme.spacingM
+            visible: ipcTitle.isExpanded
+
+            CopyBox {
+                label: I18n.tr("Toggle Modal")
+                text: "dms ipc call niriDS toggle"
+            }
+
+            CopyBox {
+                label: I18n.tr("Open Modal")
+                text: "dms ipc call niriDS open"
+            }
+
+            CopyBox {
+                label: I18n.tr("Close Modal")
+                text: "dms ipc call niriDS close"
+            }
+
+            CopyBox {
+                label: I18n.tr("Apply Profile")
+                text: "dms ipc call niriDS apply internal_only"
+            }
+
+            Separator { opacity: 0.1 }
+
+            CopyBox {
+                label: I18n.tr("Niri Binding Configuration")
+                text: "Mod+P { spawn \"dms\" \"ipc\" \"call\" \"niriDS\" \"toggle\"; }"
+            }
+        }
+    }
+
+    SettingsCard {
+        SectionTitle { 
+            id: usageTitle
+            text: I18n.tr("Usage Guide")
+            icon: "menu_book" 
+            collapsible: true
+            settingKey: "usageGuideExpanded"
         }
 
-        CopyBox {
-            label: I18n.tr("Open Modal Command")
-            text: "dms ipc call niriDS open"
-        }
-
-        CopyBox {
-            label: I18n.tr("Close Modal Command")
-            text: "dms ipc call niriDS close"
-        }
-
-        CopyBox {
-            label: I18n.tr("Apply Profile Command")
-            text: "dms ipc call niriDS apply internal_only"
-        }
-
-        InfoText {
-            text: I18n.tr("Valid profiles: internal_only, external_only, extend, mirror")
-            font.pixelSize: Theme.fontSizeSmall
-            opacity: 0.7
-        }
-
-        InfoText {
-            text: I18n.tr("To trigger the display selector using Mod+P, add this spawn command to your Niri configuration binds:")
-            color: Theme.primary
-            font.italic: true
-        }
-
-        CopyBox {
-            label: I18n.tr("Niri Bind Configuration")
-            text: "Mod+P { spawn \"dms\" \"ipc\" \"call\" \"niriDS\" \"toggle\"; }"
+        UsageGuide {
+            expanded: usageTitle.isExpanded
+            items: [
+                I18n.tr("Activate the display selector via the <b>Control Center</b> or configured <b>keybindings</b>."),
+                I18n.tr("Use the <b>IPC commands</b> above to automate display switching.")
+            ]
         }
     }
 
