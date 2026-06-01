@@ -9,6 +9,10 @@ PluginComponent {
     pluginId: "niriDS"
     pluginService: PluginService
     readonly property bool isDaemonInstance: root.parent !== null
+    readonly property bool hasExternal: {
+        const raw = NiriDS.rawOutputs || {};
+        return Object.keys(raw).some(n => n && !NiriDS.isInternalName(n));
+    }
 
     // Control Center Integration
     ccWidgetIcon: "computer"
@@ -32,11 +36,6 @@ PluginComponent {
         target: "niriDS"
         enabled: root.isDaemonInstance
 
-        readonly property bool hasExternal: {
-            const raw = NiriDS.rawOutputs || {};
-            return Object.keys(raw).some(n => n && !NiriDS.isInternalName(n));
-        }
-
         function open(): string {
             root.openMenu();
             return "SUCCESS";
@@ -54,7 +53,7 @@ PluginComponent {
 
         function apply(profile: string): string {
             const needsExternal = ["external_only", "extend", "mirror"].includes(profile);
-            if (needsExternal && !hasExternal) return "ERROR: no external display connected";
+            if (needsExternal && !root.hasExternal) return "ERROR: no external display connected";
             NiriDS.apply(profile);
             return "SUCCESS";
         }
