@@ -22,41 +22,104 @@ PluginSettings {
             }
         }
 
-        SelectionSettingPlus {
-            id: connectionAction
-            settingKey: "connectionAction"
-            label: I18n.tr("When monitor is connected")
-            description: I18n.tr("Choose what happens automatically when an external monitor is plugged in")
-            options: [
-                { label: I18n.tr("Show Menu"), value: "show_menu" },
-                { label: I18n.tr("External Only"), value: "external_only" },
-                { label: I18n.tr("Extended"), value: "extend" },
-                { label: I18n.tr("Internal Only"), value: "internal_only" },
-                { label: I18n.tr("Mirror"), value: "mirror" },
-                { label: I18n.tr("Do Nothing"), value: "none" }
-            ]
-            defaultValue: "show_menu"
+        Item {
+            width: parent.width
+            height: connectionAction.implicitHeight
+
+            HoverHandler {
+                id: connectionActionHover
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.leftMargin: -12
+                anchors.rightMargin: -12
+                anchors.topMargin: -6
+                anchors.bottomMargin: -6
+                radius: Theme.cornerRadius
+                color: connectionActionHover.hovered ? Theme.withAlpha(Theme.primary, 0.08) : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            SelectionSettingPlus {
+                id: connectionAction
+                width: parent.width
+                settingKey: "connectionAction"
+                label: I18n.tr("When monitor is connected")
+                description: I18n.tr("Choose what happens automatically when an external monitor is plugged in")
+                options: [
+                    { label: I18n.tr("Show Menu"), value: "show_menu" },
+                    { label: I18n.tr("External Only"), value: "external_only" },
+                    { label: I18n.tr("Extended"), value: "extend" },
+                    { label: I18n.tr("Internal Only"), value: "internal_only" },
+                    { label: I18n.tr("Mirror"), value: "mirror" },
+                    { label: I18n.tr("Do Nothing"), value: "none" }
+                ]
+                defaultValue: "show_menu"
+            }
         }
 
         Separator {}
 
-        ToggleSettingPlus {
-            id: enableFallback
-            settingKey: "enableFallback"
-            label: I18n.tr("Enable safety fallback")
-            description: I18n.tr("Automatically re-enable the laptop screen if all external monitors are disconnected")
-            defaultValue: true
+        Item {
+            width: parent.width
+            height: enableFallback.height
+
+            HoverHandler {
+                id: enableFallbackHover
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.leftMargin: -12
+                anchors.rightMargin: -12
+                anchors.topMargin: -6
+                anchors.bottomMargin: -6
+                radius: Theme.cornerRadius
+                color: enableFallbackHover.hovered ? Theme.withAlpha(Theme.primary, 0.08) : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            ToggleSettingPlus {
+                id: enableFallback
+                width: parent.width
+                settingKey: "enableFallback"
+                label: I18n.tr("Enable safety fallback")
+                description: I18n.tr("Automatically re-enable the laptop screen if all external monitors are disconnected")
+                defaultValue: true
+            }
         }
 
         Separator {}
 
-        StringSettingPlus {
-            id: fallbackDisplay
-            settingKey: "fallbackDisplay"
-            label: I18n.tr("Preferred internal display")
-            description: I18n.tr("The name of your laptop display (e.g. eDP-1). Leave empty for auto-detection.")
-            placeholder: "eDP-1"
-            defaultValue: ""
+        Item {
+            width: parent.width
+            height: fallbackDisplay.implicitHeight
+
+            HoverHandler {
+                id: fallbackDisplayHover
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.leftMargin: -12
+                anchors.rightMargin: -12
+                anchors.topMargin: -6
+                anchors.bottomMargin: -6
+                radius: Theme.cornerRadius
+                color: fallbackDisplayHover.hovered ? Theme.withAlpha(Theme.primary, 0.08) : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            StringSettingPlus {
+                id: fallbackDisplay
+                width: parent.width
+                settingKey: "fallbackDisplay"
+                label: I18n.tr("Preferred internal display")
+                description: I18n.tr("The name of your laptop display (e.g. eDP-1). Leave empty for auto-detection.")
+                placeholder: "eDP-1"
+                defaultValue: ""
+            }
         }
 
         Separator {}
