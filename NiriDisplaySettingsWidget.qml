@@ -105,7 +105,7 @@ PluginComponent {
                 }
 
                 if (totalOutputs > prevTotalOutputs) {
-                    const action = (typeof pluginData?.connectionAction === 'string' && pluginData.connectionAction)
+                    const action = (pluginData && typeof pluginData.connectionAction === 'string' && pluginData.connectionAction)
                         ? pluginData.connectionAction
                         : "show_menu";
 

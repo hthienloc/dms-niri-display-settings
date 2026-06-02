@@ -23,7 +23,8 @@ DankModal {
 
     function openCentered() {
         parentBounds = Qt.rect(0, 0, 0, 0);
-        backgroundOpacity = 0.5;
+        const bgOpacity = PluginService ? PluginService.loadPluginData("niriDS", "bgOpacity", 50) : 50;
+        backgroundOpacity = bgOpacity / 100.0;
         open();
         NiriDS.setDisplays();
     }
@@ -45,7 +46,7 @@ DankModal {
 
     onBackgroundClicked: () => close()
     onOpened: () => {
-        const displays = NiriDS?.displays || [];
+        const displays = NiriDS ? NiriDS.displays : [];
         const enabledCount = displays.filter(d => !d.disabled).length;
         
         let firstSelectable = 0;
@@ -64,7 +65,7 @@ DankModal {
 
     modalFocusScope.Keys.onPressed: event => {
         function getNextEnabledIndex(current, direction) {
-            const displays = NiriDS?.displays || [];
+            const displays = NiriDS ? NiriDS.displays : [];
             let count = 0;
             let index = current;
             
@@ -92,9 +93,9 @@ DankModal {
             case Qt.Key_Return:
             case Qt.Key_Enter:
                 if (optionCount > 0) {
-                    const item = NiriDS?.displays?.[selectedIndex];
-                    const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
-                    const isLast = enabledCount === 1 && !item?.disabled;
+                    const item = (NiriDS && NiriDS.displays) ? NiriDS.displays[selectedIndex] : null;
+                    const enabledCount = (NiriDS ? NiriDS.displays : []).filter(d => !d.disabled).length;
+                    const isLast = enabledCount === 1 && item && !item.disabled;
                     if (!isLast) NiriDS.toggleDisable(item);
                 }
                 event.accepted = true;
@@ -210,16 +211,16 @@ DankModal {
                             width: parent.width
                             implicitHeight: 60
                             radius: Theme.cornerRadius
-                            color: isOnlyEnabled && !modelData?.disabled ?
+                            color: isOnlyEnabled && modelData && !modelData.disabled ?
                                 Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.04) :
                                 (selectedIndex === index ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : (itemHover.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.08) : Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.08)))
-                            opacity: isOnlyEnabled && !modelData?.disabled ? 0.5 : 1.0
+                            opacity: isOnlyEnabled && modelData && !modelData.disabled ? 0.5 : 1.0
                             border.color: selectedIndex === index ? Theme.primary : "transparent"
                             border.width: selectedIndex === index ? 1 : 0
 
                             property bool isOnlyEnabled: {
-                                const enabledCount = (NiriDS?.displays || []).filter(d => !d.disabled).length;
-                                return enabledCount === 1 && !(modelData?.disabled);
+                                const enabledCount = (NiriDS ? NiriDS.displays : []).filter(d => !d.disabled).length;
+                                return enabledCount === 1 && !(modelData && modelData.disabled);
                             }
 
                             DankIcon {

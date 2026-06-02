@@ -13,11 +13,12 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Automatic Behaviors")
             icon: "auto_awesome" 
-            showReset: connectionAction.isDirty || enableFallback.isDirty || fallbackDisplay.isDirty
+            showReset: connectionAction.isDirty || enableFallback.isDirty || fallbackDisplay.isDirty || bgOpacity.isDirty
             onResetClicked: {
                 connectionAction.resetToDefault();
                 enableFallback.resetToDefault();
                 fallbackDisplay.resetToDefault();
+                bgOpacity.resetToDefault();
             }
         }
 
@@ -56,6 +57,20 @@ PluginSettings {
             description: I18n.tr("The name of your laptop display (e.g. eDP-1). Leave empty for auto-detection.")
             placeholder: "eDP-1"
             defaultValue: ""
+        }
+
+        Separator {}
+
+        SliderSettingPlus {
+            id: bgOpacity
+            settingKey: "bgOpacity"
+            label: I18n.tr("Modal Background Opacity")
+            description: I18n.tr("Adjust the background dimming opacity when the display settings modal is open")
+            minimum: 0
+            maximum: 100
+            defaultValue: 50
+            unit: "%"
+            previewType: "opacity"
         }
     }
 

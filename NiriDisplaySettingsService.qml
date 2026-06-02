@@ -1,5 +1,4 @@
 pragma Singleton
-pragma ComponentBehavior: Bound
 
 import Quickshell
 import Quickshell.Io
@@ -20,7 +19,7 @@ Singleton {
         running: false
     }
 
-    function stopMirror(): void {
+    function stopMirror() {
         if (wlMirrorProc.running) wlMirrorProc.running = false;
     }
 
@@ -78,7 +77,7 @@ Singleton {
         });
     }
 
-    function toggleDisable(display: var): void {
+    function toggleDisable(display) {
         if (!display || !display.name) return;
         stopMirror();
         const action = display.disabled ? "on" : "off";
@@ -87,7 +86,7 @@ Singleton {
         });
     }
 
-    function apply(profile: string): void {
+    function apply(profile) {
         stopMirror();
         const toProcess = [...displays];
         if (toProcess.length === 0) return;
@@ -152,10 +151,10 @@ Singleton {
         }
     }
 
-    function enableInternalDisplay(): void {
+    function enableInternalDisplay() {
         Proc.runCommand("niriDS:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
             if (exitCode !== 0) {
-                const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
+                const pref = PluginService ? PluginService.loadPluginData("niriDS", "fallbackDisplay", "") : "";
                 if (pref) {
                     Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
                 }
@@ -170,7 +169,7 @@ Singleton {
                         return;
                     }
                 }
-                const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
+                const pref = PluginService ? PluginService.loadPluginData("niriDS", "fallbackDisplay", "") : "";
                 if (pref) {
                     Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
                 }
@@ -180,7 +179,7 @@ Singleton {
         });
     }
 
-    function mirrorDisplay(): void {
+    function mirrorDisplay() {
         // Find internal + any external (regardless of disabled state).
         // Callers (apply("mirror") and the button) must enable outputs first.
         const internal = displays.find(d => isInternal(d));
