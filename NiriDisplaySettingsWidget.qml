@@ -82,7 +82,7 @@ PluginComponent {
 
     Timer {
         id: niriWatcher
-        interval: 3000
+        interval: (pluginData?.pollingInterval ?? 3) * 1000
         repeat: true
         running: root.isDaemonInstance
 
