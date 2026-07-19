@@ -48,6 +48,16 @@ PluginComponent {
     property int initTicks: 0
     property var cachedRawOutputs: ({})
 
+    /**
+     * Try to re‑enable the internal display in a way that is resilient to compositor timing.
+     * Performs an immediate attempt plus deferred attempts to cover race conditions.
+     */
+    function enableInternalDisplayWithFallback() {
+        NiriDS.enableInternalDisplay();
+        Qt.callLater(() => NiriDS.enableInternalDisplay());
+        Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
+    }
+
     function checkFallback() {
         const enableFallback = PluginService.loadPluginData("niriDS", "enableFallback", true);
         if (!enableFallback) return;
@@ -55,14 +65,12 @@ PluginComponent {
         // Kill wl-mirror first — its target output just disappeared
         NiriDS.stopMirror();
 
-        NiriDS.enableInternalDisplay();
-        Qt.callLater(() => NiriDS.enableInternalDisplay());
-        Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
+        root.enableInternalDisplayWithFallback();
     }
 
     Timer {
         id: niriWatcher
-        interval: (pluginData && pluginData.pollingInterval !== undefined ? pluginData.pollingInterval : 3) * 1000
+        interval: (pluginData && typeof pluginData.pollingInterval === "number" && pluginData.pollingInterval > 0 ? pluginData.pollingInterval : 3) * 1000
         repeat: true
         running: true
 

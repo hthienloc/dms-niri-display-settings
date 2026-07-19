@@ -39,9 +39,10 @@ PluginComponent {
         }
         function onToggleRequested() {
             if (modal.shouldBeVisible) {
-                NiriDS.closeRequested();
+                modal.shouldBeVisible = false;
+                modal.close();
             } else {
-                NiriDS.openRequested();
+                root.openMenu();
             }
         }
     }
