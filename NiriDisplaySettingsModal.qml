@@ -15,11 +15,7 @@ DankModal {
     property int selectedIndex: 0
     property int optionCount: NiriDS.displays ? NiriDS.displays.length : 0
     property rect parentBounds: Qt.rect(0, 0, 0, 0)
-    property bool hasExternal: {
-        const raw = NiriDS.rawOutputs || {};
-        const names = Object.keys(raw);
-        return names.some(n => n && !NiriDS.isInternalName(n));
-    }
+    readonly property bool hasExternal: NiriDS.hasExternal
 
     function openCentered() {
         parentBounds = Qt.rect(0, 0, 0, 0);
