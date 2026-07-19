@@ -13,6 +13,15 @@ Singleton {
     property var displays: []
     property var rawOutputs: ({} )
 
+    signal openRequested()
+    signal closeRequested()
+    signal toggleRequested()
+
+    readonly property bool hasExternal: {
+        const raw = root.rawOutputs || {};
+        return Object.keys(raw).some(n => n && !isInternalName(n));
+    }
+
     // Tracks the running wl-mirror process so it can be killed on mode switch
     Process {
         id: wlMirrorProc
