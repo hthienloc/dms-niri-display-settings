@@ -18,38 +18,32 @@ PluginComponent {
         const enabledCount = displays.filter(d => !d.disabled).length;
         return enabledCount + " active display" + (enabledCount === 1 ? "" : "s");
     }
-    ccWidgetIsActive: modal.shouldBeVisible
+    ccWidgetIsActive: NiriDS.modalVisible
 
     onCcWidgetToggled: {
-        root.openMenu();
-    }
-
-    NiriDisplaySettingsModal {
-        id: modal
+        root.toggleMenu();
     }
 
     Connections {
         target: NiriDS
-        function onOpenRequested() {
-            root.openMenu();
-        }
-        function onCloseRequested() {
-            modal.shouldBeVisible = false;
-            modal.close();
-        }
-        function onToggleRequested() {
-            if (modal.shouldBeVisible) {
-                modal.shouldBeVisible = false;
-                modal.close();
+        function onModalVisibleChanged() {
+            if (NiriDS.modalVisible) {
+                NiriDS.setDisplays();
+                NiriDS.modal?.openCentered();
             } else {
-                root.openMenu();
+                NiriDS.modal?.close();
             }
         }
     }
 
-    function openMenu() {
-        modal.shouldBeVisible = true;
-        modal.openCentered();
-        NiriDS.setDisplays();
+    function toggleMenu() {
+        if (NiriDS.modalVisible) {
+            NiriDS.modal?.close();
+            NiriDS.modalVisible = false;
+        } else {
+            NiriDS.setDisplays();
+            NiriDS.modal?.openCentered();
+            NiriDS.modalVisible = true;
+        }
     }
 }

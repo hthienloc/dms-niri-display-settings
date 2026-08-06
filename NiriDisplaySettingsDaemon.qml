@@ -11,21 +11,42 @@ PluginComponent {
     pluginId: "niriDS"
     pluginService: PluginService
 
+    NiriDisplaySettingsModal {
+        id: modal
+        Component.onCompleted: NiriDS.modal = modal
+        onShouldBeVisibleChanged: {
+            if (!shouldBeVisible && NiriDS.modalVisible) {
+                NiriDS.modalVisible = false;
+            }
+        }
+    }
+
     IpcHandler {
         target: "niriDS"
+        enabled: true
 
         function open(): string {
-            NiriDS.openRequested();
+            NiriDS.setDisplays();
+            modal.openCentered();
+            NiriDS.modalVisible = true;
             return "SUCCESS";
         }
 
         function close(): string {
-            NiriDS.closeRequested();
+            modal.close();
+            NiriDS.modalVisible = false;
             return "SUCCESS";
         }
 
         function toggle(): string {
-            NiriDS.toggleRequested();
+            if (NiriDS.modalVisible) {
+                modal.close();
+                NiriDS.modalVisible = false;
+            } else {
+                NiriDS.setDisplays();
+                modal.openCentered();
+                NiriDS.modalVisible = true;
+            }
             return "SUCCESS";
         }
 
@@ -98,7 +119,9 @@ PluginComponent {
                         : "show_menu";
 
                     if (action === "show_menu") {
-                        NiriDS.openRequested();
+                        NiriDS.setDisplays();
+                        NiriDS.modal?.openCentered();
+                        NiriDS.modalVisible = true;
                     } else if (action !== "none") {
                         NiriDS.apply(action);
                     }

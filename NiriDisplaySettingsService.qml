@@ -12,10 +12,8 @@ Singleton {
 
     property var displays: []
     property var rawOutputs: ({} )
-
-    signal openRequested()
-    signal closeRequested()
-    signal toggleRequested()
+    property bool modalVisible: false
+    property var modal: null
 
     readonly property bool hasExternal: {
         const raw = root.rawOutputs || {};
