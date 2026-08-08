@@ -11,7 +11,7 @@ DankModal {
 
     layerNamespace: "dms:plugins:niriDS"
     keepPopoutsOpen: true
-
+    useOverlayLayer: true
     property int selectedIndex: 0
     property int optionCount: NiriDS.displays ? NiriDS.displays.length : 0
     property rect parentBounds: Qt.rect(0, 0, 0, 0)
